@@ -36,3 +36,6 @@ tools/preview/vendor/
 # 想恢复 fixture 1：自己登录 AIMS，把页面 HTML 存成本文件名放到仓库根目录即可。
 # 见 README「关于 source code.html」。
 source code.html
+
+# 发布包（tools/package_release.py 生成，作为 Release 资产上传，不入库）
+dist/

@@ -444,8 +444,12 @@ div.footer_inner table.plaintable {
   width: 100px !important;
   height: auto !important;
   padding: 3px 6px;
-  background: var(--reaims-badge-bg);
-  border-radius: var(--reaims-r-sm);
+  /* 必须带 !important。02-base.css 里那条零特异性的背景中和规则是 `!important`，
+     而 !important 之间先看重要性再看特异性 —— 这条普通声明会被它直接清掉，
+     深色模式下白片消失、黑色徽章压在深色页脚上等于看不见。
+     （同文件里其它背景规则本来就都带了，这条是漏网。） */
+  background: var(--reaims-badge-bg) !important;
+  border-radius: var(--reaims-r-sm) !important;
   vertical-align: middle;
 }
 

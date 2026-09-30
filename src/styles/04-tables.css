@@ -99,8 +99,13 @@ div.body table:has(> tbody > tr > :is(.dddefault, .ddheader, .ddtitle, .ddlabel,
    还给表头/标题/ntlabel 等写了 #E3E5EE 的浅色底。
    这里把所有正文单元格统一清成透明 —— 表格的结构应该来自"发丝线"，不是"框"。
 
-   这条"透明化"是覆盖完备性的关键：它让 Banner 那些写死的浅色底在深色模式下
-   【不可能】漏出来，无论那个格子属于哪张表、表 class 是什么。 */
+   这条"透明化"曾经是覆盖完备性的关键：它让 Banner 写死在单元格上的浅色底在深色
+   模式下不可能漏出来，无论那个格子属于哪张表、表 class 是什么。
+
+   现在它已经被 02-base.css 里那条【零特异性的全局背景中和】(0,0,0) 覆盖到了 ——
+   那条连容器（table / tr / div / span）一起清，范围更大。这里保留是因为：
+   ① 它把"单元格底必须透明"这个局部意图写在离角色着色规则最近的地方；
+   ② 它顺手清了单元格的四边框，那是全局规则不做的事。 */
 div.body :is(td, th) {
   border: 0 !important;
   background-color: transparent !important;

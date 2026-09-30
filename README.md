@@ -16,18 +16,22 @@
 
 ## 安装
 
-本扩展未上架 Chrome 应用商店，用开发者模式加载：
+本扩展未上架 Chrome 应用商店，用开发者模式加载。**不需要 Git，也不需要构建。**
 
-1. 克隆或下载本仓库
-   ```bash
-   git clone https://github.com/zwang-JS/ReAIMS.git
-   ```
+1. 到 [Releases](https://github.com/zwang-JS/ReAIMS/releases/latest) 下载 `ReAIMS-v1.0.0.zip`
 2. 打开 `chrome://extensions`
 3. 右上角打开 **开发者模式**
-4. 点 **加载已解压的扩展程序**，选择 `ReAIMS/` 目录
+4. **把下载的 zip 直接拖进这个页面**，确认安装
 5. 打开 AIMS，界面即生效
 
-没有构建步骤、没有 npm 依赖 —— 仓库里就是扩展本身。
+> **如果拖进去没反应**：把 zip 解压，点左上角 **加载已解压的扩展程序**，选择**解压出来的文件夹**
+> （注意是文件夹，不是 zip 本身）。拖 zip 在部分 Chrome 版本上可行，而"解压后加载文件夹"
+> 是官方文档写的那条路 —— 两条都列出来，免得卡住。
+
+> **升级**：未打包的扩展不会自动更新。出新版本时重新下载 zip 拖一次即可（先删掉旧的，
+> 或用同一个方式覆盖）。
+
+没有构建步骤、没有 npm 依赖 —— 发布包里就是扩展本身（`manifest.json` + `icons/` + `src/`）。
 
 ## 功能
 
@@ -126,10 +130,12 @@ ReAIMS/
 │   └── popup/                  扩展弹窗
 └── tools/
     ├── gen_icons.py            生成扩展图标（Pillow）
+    ├── package_release.py      打发布 zip（发布资产，dist/ 不入库）
     └── preview/                静态预览台（见下）
         ├── fetch_vendor.py     抓取第三方资源（vendor/ 不入库）
         ├── build_preview.py    由本地抓取的页面与内置样例合成
         ├── audit_overrides.py  覆盖完备性审计（含自检）
+        ├── check_surfaces.py   背景卫生检查（含自检）
         ├── preview.html        主预览页
         └── preview-bare.html   无外壳的裸弹窗页样例
 ```
@@ -263,6 +269,48 @@ python tools/preview/audit_overrides.py --selftest
 > 浅灰紫底就会原样漏出来。现在单元格规则改成按**单元格 class** 命中，覆盖的完备性
 > 不再依赖"我有没有把表类枚举全"。
 
+### 背景卫生检查
+
+```bash
+python tools/preview/check_surfaces.py
+python tools/preview/check_surfaces.py --selftest
+```
+
+这个工具和上面的审计是**互补**的，补的是审计的三个结构性盲区：审计只遍历**带 class 的元素**
+（`html` / `body` 没有 class，永远不被检查）；被"抹掉"的底计算值是 `transparent` 而**不是**
+AIMS 的字面色；而且纯白被排除在它的危险集合外（我们确实在按钮文字和徽章白片上刻意用白）。
+所以"某个容器带着浅色底"和"我们自己的底被误删"这两类问题，审计**在结构上就看不见**。
+
+它做两件事：
+
+1. **深色模式下不该有浅色底** —— 遍历每个可见元素（不过滤 class），报出任何计算出来偏亮的
+   不透明底色。这就是能抓住"白底粉字"那个 bug 的检查；刻意保留的浅色面（深色模式下的
+   应用商店徽章白片）走显式白名单，并且白名单会被打印出来，不会悄悄放行。
+2. **我们自己画的底必须还在** —— 断言 13 个关键面（页面底、品牌带、吸顶栏、标签胶囊、
+   表纸、表头着色、info / warning callout、徽章白片…）在明暗两种模式下都等于它该用的令牌。
+   其中 `html` / `body` 那两条是**哨兵**：页面底色一旦变透明就会立刻失败 ——
+   这正是 `02-base.css` 里那条零特异性背景中和规则最危险的失败模式。
+
+同样自带 `--selftest`：弄坏徽章那条规则，确认 CHECK 2 会报 FAIL，再还原。
+
+### 打发布包
+
+```bash
+python tools/package_release.py
+```
+
+产出 `dist/ReAIMS-v<版本>.zip`，就是 Release 里那个可以拖进 `chrome://extensions` 的文件。
+
+**为什么文件清单不是从 `manifest.json` 推出来的**：那样会打出一个**坏包**。
+`manifest.json` 里根本没有 `src/popup/popup.css` —— 引用它的是 `popup.html` 里的
+`<link href="popup.css">`。照 manifest 的引用清单打包，弹窗的整个样式表都会漏掉，
+而弹窗只是变成没有样式，构建输出里一点异常都看不出来。所以脚本把整个 `src/` 与 `icons/`
+都打进去，然后**解析 manifest 与嵌套 HTML 的引用逐个校验** —— 那才是能抓住这类错误的一步。
+
+另外两条硬要求：`manifest.json` 必须在 zip 的**根目录**（套一层文件夹 Chrome 就会报
+"Manifest file is missing or unreadable"，拖入和解压两条路都一样）；时间戳写死，
+同一份内容重复构建字节一致。
+
 ## 已知限制
 
 - **不含登录页**。AIMS 走 SAML SSO 跳转到 Okta（`auth.cityu.edu.hk`），那是已现代化、基于 Shadow DOM、且全校共用的非 AIMS 页面，本扩展刻意不碰。
@@ -270,6 +318,8 @@ python tools/preview/audit_overrides.py --selftest
 - **仅覆盖 `banweb.cityu.edu.hk`**。AIMS 跳转到其它域名的页面不在范围内。
 - **用弹窗改主题后，下一次打开 AIMS 可能会有一次极短的闪烁**。因为页面侧的 `localStorage` 镜像只有在页面里跑过脚本才会更新，而 `theme-boot.js` 从镜像同步读取。只要那时有任一 AIMS 页面开着，镜像就会立即更新，不会闪。
 - 表头吸顶（`position: sticky`）用的是 AIMS 的 `td.ddheader` 而非 `<thead>`，因为 Banner 不产生 `<thead>`。极长的多段表格里，多行表头会叠在同一位置。
+- **浅色模式下，标记层面写死的浅色/浅彩底也会被一并清掉**。`02-base.css` 里那条背景中和规则是无条件的（不分主题），目的是让 AIMS 画的所有底都不可能漏出来。浅色模式下 AIMS 那些接近纯白的底本来就看不出来，所以基本没有实际差别；但如果某处用的是有意的**彩色**底（例如米黄提示块），它在浅色模式下也会变成我们自己的承载面。这是一处刻意的行为变化 —— 换来的是"深色模式下不可能再出现白底"。
+- **只有行内 `!important` 压不过**。如果 AIMS 用 `style="background-color:#fff !important"` 写死底色，作者样式表无论怎么写都赢不了（行内 important 高于作者 important）。目前没遇到，真遇到的话只能改用 USER 来源注入（需要加 `scripting` 权限）。
 
 ## 许可
 

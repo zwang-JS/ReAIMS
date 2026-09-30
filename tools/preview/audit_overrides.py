@@ -20,9 +20,17 @@ below, and that exclusion is the only "trust me" in the whole check.
 Verifying the verifier
 ----------------------
 A check that cannot fail proves nothing, so this script ships with a self-test:
-`--selftest` deliberately breaks one override, confirms the audit then FAILS, and
-restores the file. Run it if you ever change the audit and want to know it still
-detects anything.
+`--selftest` injects a stylesheet that deliberately re-exposes one of AIMS's literal
+colours on a classed element, and confirms the audit then FAILS. It touches no file
+in the repo.
+
+An earlier version instead broke one of our own override rules and restored it.
+That strategy stopped working once the stylesheets became layered (a zero-specificity
+background neutraliser in 02-base plus cell-level transparency in 04-tables): removing
+any *single* background rule now yields `transparent`, never a re-exposed AIMS colour,
+so the self-test could no longer fail on the thing it was meant to detect. Injecting
+the literal tests the detector directly and does not rot when the CSS is refactored.
+Testing that removing a *real* rule gets noticed is check_surfaces.py's `--selftest`.
 
 Usage
 -----
@@ -189,7 +197,7 @@ AUDIT_JS = """
 """
 
 
-def build_audit_page(danger: set[tuple[int, int, int]]) -> str:
+def build_audit_page(danger: set[tuple[int, int, int]], extra_css: str = "") -> str:
     html = open(PREVIEW, encoding="utf-8").read()
     js = AUDIT_JS % ",\n    ".join('"%d,%d,%d"' % c for c in sorted(danger))
 
@@ -198,6 +206,10 @@ def build_audit_page(danger: set[tuple[int, int, int]]) -> str:
                  ('href="vendor/', 'href="../vendor/'),
                  ('src="vendor/', 'src="../vendor/')):
         html = html.replace(a, b)
+
+    # 自检注入的样式放在最后，确保它在源顺序上也赢
+    if extra_css:
+        js = "<style>%s</style>\n" % extra_css + js
 
     idx = html.rfind("</body>")
     html = html[:idx] + js + html[idx:]
@@ -247,6 +259,23 @@ def run_audit(chrome: str, page: str) -> str:
 
 CAPTURE = os.path.join(REPO, "source code.html")
 
+#: 自检时注入的"敌意"样式：故意把一个 AIMS 字面色重新暴露到一个带 class 的元素上。
+#:
+#: 为什么不再像以前那样"去破坏我自己的某条规则"：
+#: 现在样式表是【分层】的 —— 02-base 的零特异性背景中和 + 04-tables 的单元格透明化，
+#: 所以拆掉任何【单条】背景规则，结果都是 background-color 变成 transparent，
+#: 而不会把 AIMS 的颜色重新露出来。也就是说"拆一条规则"已经无法证明检测器还能报警了：
+#: 它会让自检失败在锚点上（或假通过），而不是失败在被检测物上。
+#:
+#: 直接注入一个 AIMS 字面色，是对【检测器本身】干净、且不随样式表重构而失效的测法。
+#: 至于"拆掉真实规则会不会被发现"，由 check_surfaces.py 的 --selftest 负责（它拆的是
+#: 徽章白片的 !important，那是真会改变渲染的）。
+#: #0000ff 是 AIMS 样式表里 A:link 的颜色，确定在危险集合内；选择器特异性 (0,2,3)
+#: 高于我自己的 (0,2,2)，并且这段 <style> 在文档里更靠后，两重保证它一定生效。
+SELFTEST_CSS = """
+div.body table :is(td, th).dddefault { color: #0000ff !important; }
+"""
+
 #: 占位块的签名文字。第二个信号，用来兜住"仓库里没有抓取文件、但页面确实含真标记"
 #: 这种自相矛盾的情况。
 PLACEHOLDER_MARKERS = (
@@ -293,27 +322,10 @@ def fixture1_coverage(page_path: str) -> tuple[bool, str]:
     return False, why
 
 
-def read_text_preserving_newlines(path: str) -> tuple[str, str]:
-    """Read as text with LF newlines, remembering the file's original style.
-
-    Returns (text_with_LF, newline_style). Reading in binary avoids Python's
-    universal-newline translation, so the caller can write back byte-exactly.
-    """
-    raw = open(path, "rb").read()
-    style = "\r\n" if b"\r\n" in raw else "\n"
-    return raw.decode("utf-8").replace("\r\n", "\n"), style
-
-
-def write_text_preserving_newlines(path: str, text: str, style: str) -> None:
-    out = text if style == "\n" else text.replace("\n", style)
-    with open(path, "wb") as fh:
-        fh.write(out.encode("utf-8"))
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--selftest", action="store_true",
-                    help="故意破坏一条覆盖规则，确认审计会 FAIL，然后还原")
+                    help="注入一个 AIMS 字面色，确认审计会 FAIL（不碰仓库文件）")
     args = ap.parse_args()
 
     if not os.path.exists(BANNER_CSS):
@@ -332,50 +344,32 @@ def main() -> int:
 
     danger = banner_literals(BANNER_CSS) - OURS
 
-    target = os.path.join(REPO, "src", "styles", "03-chrome.css")
-    original = None
+    extra_css = ""
     if args.selftest:
-        # 挑一条【没有后备规则】的：td.bg3 的底色（AIMS 的 #cccc00）。
-        # 别挑 a:link 之类的 —— 02-base 的全局规则会兜住，破坏它不会改变实际取值，
-        # 于是审计"正确地"仍然 PASS，看起来像审计失灵。
+        # 注入一个 AIMS 字面色，确认检测器还能报警。理由和为什么不再拆自己的规则，
+        # 见 SELFTEST_CSS 上方的注释。
         #
-        # 本脚本会改写一个源文件再还原，所以必须原样保住它的换行风格：
-        # 读进来把 CRLF 归一成 LF（锚点在 LF 下书写），写回时再按原风格还原。
-        # 否则在 Windows 上"还原"回来的文件换行符已经变了 ——
-        # 一个声称只读+还原的工具不该有这种副作用。
-        original = read_text_preserving_newlines(target)
-        body, nl = original
-        needle = ("  background-color: var(--reaims-line) !important;\n"
-                  "  background-image: none !important;\n}")
-        if needle not in body:
-            print("自检锚点未找到，03-chrome.css 的 td.bg3 规则可能已改动。", file=sys.stderr)
-            return 2
-        broken = body.replace(needle, "  /* selftest: override removed */\n"
-                                      "  background-image: none !important;\n}")
-        write_text_preserving_newlines(target, broken, nl)
-        print("自检：已临时移除 td.bg3 的底色覆盖，期望审计报告 FAIL\n")
+        # 注意这个自检【不碰仓库里的任何文件】—— 比上一版"改写 03-chrome.css 再还原"
+        # 干净：那一版不仅要小心保住换行风格，而且锚点会随着样式表重构而失效
+        # （这次页头那条横线改成渐变画之后它就真的失效了）。
+        extra_css = SELFTEST_CSS
+        print("自检：注入一个 AIMS 字面色（#0000ff），期望审计报告 FAIL\n")
 
-    try:
-        page = build_audit_page(danger)
-        result = run_audit(chrome, page)
-        print(result)
+    page = build_audit_page(danger, extra_css)
+    result = run_audit(chrome, page)
+    print(result)
 
-        # 覆盖面必须显式说出来。少了 fixture 1 时审计仍然会打印 PASS ——
-        # 那个 PASS 是诚实的（查过的确实都干净），但它不等于"全都查过了"。
-        # 一个静默缩水的检查和一个完整的检查长得一模一样，正是这里要避免的。
-        #
-        # 这段刻意只用 ASCII：诊断信息要在任何控制台编码下都能读出来
-        # （中文正文在非中文 Windows 的 cp1252 控制台上会变成 \uXXXX 转义）。
-        covered, why = fixture1_coverage(page)
-        if covered:
-            print("\ncoverage: fixture 1 (real captured markup) IS included -- full gate.")
-        else:
-            print(WARN_FIXTURE1_MISSING.format(why=why))
-    finally:
-        if original is not None:
-            body, nl = original
-            write_text_preserving_newlines(target, body, nl)
-            print("\n自检：已还原 03-chrome.css")
+    # 覆盖面必须显式说出来。少了 fixture 1 时审计仍然会打印 PASS ——
+    # 那个 PASS 是诚实的（查过的确实都干净），但它不等于"全都查过了"。
+    # 一个静默缩水的检查和一个完整的检查长得一模一样，正是这里要避免的。
+    #
+    # 这段刻意只用 ASCII：诊断信息要在任何控制台编码下都能读出来
+    # （中文正文在非中文 Windows 的 cp1252 控制台上会变成 \uXXXX 转义）。
+    covered, why = fixture1_coverage(page)
+    if covered:
+        print("\ncoverage: fixture 1 (real captured markup) IS included -- full gate.")
+    else:
+        print(WARN_FIXTURE1_MISSING.format(why=why))
 
     # 注意：不能判断 result.startswith("FAIL") —— 结果前几行是统计摘要，
     # FAIL 出现在中间。必须查子串。

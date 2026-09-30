@@ -73,9 +73,17 @@ div.body table:has(> tbody > tr > :is(
   border-collapse: separate !important;
   border-spacing: 0 !important;
   background-color: var(--reaims-surface) !important;
+  /* 【记录侧脊】每张表纸的左边一道品红竖线。
+     它和页头那条横线的起笔同宽同色、同一起点，因此整页左缘看起来是一条
+     贯穿下来的记号线 —— 这是这套设计里唯一的"记号"，也是把品红从
+     "只有链接才出现"提升成承重结构色的地方。 */
   border: 0 !important;
+  border-left: var(--reaims-spine) solid var(--reaims-brand) !important;
   border-radius: var(--reaims-r-lg);
-  box-shadow: var(--reaims-shadow);
+  /* 阴影之外再加一圈 1px 描边。
+     深色模式下阴影在近黑页面上等于不存在（实测纸面与页面只差 1.07:1），
+     没有这圈线，整张表在深色里就没有边界。浅色模式加这圈线也更利落。 */
+  box-shadow: var(--reaims-shadow), 0 0 0 1px var(--reaims-line);
   width: 100% !important;
   margin: 0 0 var(--reaims-sp-5) !important;
 }
@@ -92,6 +100,17 @@ div.body table:has(> tbody > tr > :is(.dddefault, .ddheader, .ddtitle, .ddlabel,
      只差一点点，没有边框就分不出这是"表格里嵌了一张表"。 */
   border: 1px solid var(--reaims-line) !important;
   margin: var(--reaims-sp-3) 0 0 !important;
+}
+
+/* 嵌套表的表头再降一档。
+   它是一行数据里的子表（例如某个课程的多个上课时段），如果也用全强度梅墨条，
+   一个两行的子表会和整张成绩表的表头一样重 —— 看起来像一个平级的新表，
+   而不是那一行的展开内容。特异性 (0,2,4) 高于墨条规则的 (0,2,2)。 */
+div.body table table :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) {
+  background-color: var(--reaims-line-strong) !important;
+  color: var(--reaims-ink) !important;
+  font-size: var(--reaims-fs-xs) !important;
+  padding: 8px 12px !important;
 }
 
 /* --- 单元格：先清边框与底色 -------------------------------------------
@@ -156,23 +175,73 @@ div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefaul
   border-top: 0 !important;
 }
 
-/* --- 角色：表头 / 标题（带底色） --------------------------------------- */
+/* --- 角色：真正的表头 —— 梅墨横条 -------------------------------------
+   Banner 给表头的是 #E3E5EE 一片浅灰紫。这里换成一块【梅墨】横条
+   （带品红底调的近黑，取值理由见 01-tokens）配浅色字。
 
+   为什么值得下这么重的一块颜色：表头是"这是一份正式记录"最直接的证据，
+   而浅灰底的表头在视觉上几乎等于没有表头 —— 整张表塌成一片白。
+   给它一块实心深色，表就立住了；换来的是后面几十行数据不必再加任何装饰。
+   （注意：只做深色底，不加彩色描边 —— 品红已经用在侧脊、页头横线和选中项上，
+     再往表头加就过载了。） */
 div.body :is(td, th):is(
-  .ddheader, .ddtitle, .dbheader, .dbtitle, .deheader, .detitle,
-  .ntheader, .nttitle, .ntlabel, .mpheader, .mptitle, .cityuddlabel
+  .ddheader, .dbheader, .deheader, .ntheader, .mpheader
 ) {
+  background-color: var(--reaims-ink-bar) !important;
+  color: var(--reaims-ink-bar-fg) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs-xs) !important;
+  letter-spacing: 0.012em;
+  padding: 11px 14px !important;
+}
+
+/* 墨条里的链接必须跟着变浅色。
+   不写这条就会落进"拿填充色当文字色"那个坑 —— 品红压在梅墨条上只有 2.35:1。
+   这和之前标签条修过的是同一类漏洞，只不过那次是标签、这次是表头里的链接。
+   四个伪类都要覆盖：Banner 的 A:hover / A:visited 是各自独立的声明。 */
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a,
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a:link,
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a:visited,
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a:hover,
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a:focus,
+div.body :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader) a:active {
+  color: var(--reaims-ink-bar-fg) !important;
+  text-decoration: none !important;
+}
+
+/* 表题格（ddtitle 等）只给 tonal 底，【不】跟列头抢那条梅墨。
+   Banner 的分组表里 ddtitle 是分组标题、ddheader 是列头，两者紧挨着；
+   如果都是全强度墨条，一张五行的小表里会出现三条等重横杠。 */
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) {
   background-color: var(--reaims-surface-3) !important;
   color: var(--reaims-ink) !important;
   font-weight: 600 !important;
   font-size: var(--reaims-fs-sm) !important;
   letter-spacing: 0.006em;
-  padding: 9px 14px !important;
+  padding: 10px 14px !important;
 }
 
-/* .cityuddlabel 原本是 #1E2B83 深蓝压在 #E3E5EE 上，深色模式下深蓝 ≈ 不可见 */
-div.body :is(td, th).cityuddlabel {
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a,
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a:link,
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a:visited,
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a:hover,
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a:focus,
+div.body :is(td, th):is(.ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) a:active {
   color: var(--reaims-ink) !important;
+}
+
+/* --- 角色：字段标签 ——【不】上梅墨条 ----------------------------------
+   ntlabel 是 "Student Name" / "Programme" 这类【行标签】，cityuddlabel 同理。
+   它们不是列头：如果一起上深色条，那张两列的标签表会变成左边一整条黑，
+   视觉重量远超过它承载的信息。
+   （cityuddlabel 原本是 #1E2B83 深蓝压在 #E3E5EE 上，深色模式下深蓝 ≈ 不可见。） */
+div.body :is(td, th):is(.ntlabel, .cityuddlabel) {
+  background-color: var(--reaims-surface-3) !important;
+  color: var(--reaims-ink) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs-sm) !important;
+  letter-spacing: 0.006em;
+  padding: 10px 14px !important;
 }
 
 /* --- 角色：行标签（加粗、无底色） -------------------------------------- */
@@ -213,8 +282,13 @@ div.body table > tbody > tr:hover > :is(td, th) {
 }
 
 div.body table > tbody > tr:hover > :is(td, th):is(
-  .ddheader, .ddtitle, .dbheader, .dbtitle, .deheader, .detitle,
-  .ntheader, .nttitle, .ntlabel, .mpheader, .mptitle, .cityuddlabel
+  .ddheader, .dbheader, .deheader, .ntheader, .mpheader
+) {
+  background-color: var(--reaims-ink-bar) !important;
+}
+
+div.body table > tbody > tr:hover > :is(td, th):is(
+  .ddtitle, .dbtitle, .detitle, .nttitle, .mptitle
 ) {
   background-color: var(--reaims-surface-3) !important;
 }
@@ -253,13 +327,22 @@ div.body :is(td, th):is(.ddheader, .dbheader) {
 
 /* --- 表标题（caption）-------------------------------------------------- */
 
+/* 表题（caption）。
+   刻意压到最小的元信息档、并且用弱色：它只是"这张表叫什么"的标签，
+   一旦用正文色加粗，就会去和页标题、和表头梅墨条抢注意力，
+   结果三层都变弱。层级应该是 页标题 >> 表题（弱）> 表头（深底浅字）> 数据。 */
 div.body table > caption.captiontext {
   caption-side: top;
   text-align: left !important;
-  color: var(--reaims-ink) !important;
-  font-size: var(--reaims-fs-sm) !important;
+  color: var(--reaims-ink-muted) !important;
+  font-family: var(--reaims-font) !important;
+  /* Banner 给 caption 写的是 font-style: italic —— 全站唯一的斜体就是它，
+     而且是"没被覆盖到"而不是有意为之。 */
+  font-style: normal !important;
+  font-size: var(--reaims-fs-xs) !important;
   font-weight: 600 !important;
-  padding: 0 0 var(--reaims-sp-2) !important;
+  letter-spacing: 0.01em !important;
+  padding: 0 0 var(--reaims-sp-3) !important;
   margin: 0 !important;
 }
 

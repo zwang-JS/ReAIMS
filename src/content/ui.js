@@ -34,6 +34,30 @@
 
   const THEMES = ["light", "dark", "system"];
 
+  /* ---------------------------------------------------------------------
+     把吸顶栏的实际高度回写到 --reaims-sticky-h
+     ---------------------------------------------------------------------
+     这个值不是常量：标签条会按页面的标签数量换行，搜索行跟着变，
+    实测在 95~101px 之间，而 CSS 里写死的是一个估值 92px。
+     少算的那几像素会让表头吸顶时压在导航下面 —— 表头正好被遮住一条。
+     量一次比继续猜一个数字可靠；它只写一个自定义属性，不动任何结构。 */
+  function syncStickyHeight() {
+    const nav = document.querySelector(".cityu_noprint");
+    if (!nav) return;
+    const h = Math.round(nav.getBoundingClientRect().height);
+    if (h > 0) {
+      document.documentElement.style.setProperty("--reaims-sticky-h", h + "px");
+    }
+  }
+
+  syncStickyHeight();
+  window.addEventListener("resize", syncStickyHeight);
+
+  if (typeof ResizeObserver === "function") {
+    const nav = document.querySelector(".cityu_noprint");
+    if (nav) new ResizeObserver(syncStickyHeight).observe(nav);
+  }
+
   /* 阴影内部的样式。用 var(--reaims-*) 取 01-tokens.css 里的令牌 ——
      自定义属性会继承进 shadow 边界，所以扩展 UI 与注入样式共用同一个设计系统。
      每个 var() 都带兜底值，万一令牌没加载按钮也不至于变成裸样式。 */

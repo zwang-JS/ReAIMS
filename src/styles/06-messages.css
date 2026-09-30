@@ -48,6 +48,40 @@ div.infotextdiv table.infotexttable td.indefault:has(> img.headerImg) {
   white-space: nowrap;
 }
 
+/* 把那个 14x12 的老位图图标藏掉。
+   它是 2002 年的点心式 GIF（一个没有字形的小方块），放在一套全部由令牌驱动的
+   界面里很扎眼；而且它和框子自己左边那道强调线说的是同一件事。 */
+div.infotextdiv img.headerImg {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   裸的语义消息（不在 infotextdiv 里的那些）
+   问题：一句泛泛的说明占了整条带底色的框，而真正的错误和警告只是同样字号的
+   一行彩色文字 —— 主次完全反了，最不重要的那个是这一节里最重的对象。
+   做法：给语义消息同样的容器几何（同圆角、同内边距、同左强调线），
+   让"重要的东西看起来更重要"。左边的色条是全站统一的"标记"语言，见 03/04。
+   -------------------------------------------------------------------------- */
+
+div.body p:has(> .errortext),
+div.body p:has(> .warningtext),
+div.body p:has(> .fielderrortext) {
+  border-radius: var(--reaims-r) !important;
+  padding: 13px 16px !important;
+  margin: var(--reaims-sp-3) 0 !important;
+}
+
+div.body p:has(> .errortext),
+div.body p:has(> .fielderrortext) {
+  background-color: var(--reaims-danger-bg) !important;
+  border-left: 3px solid var(--reaims-danger) !important;
+}
+
+div.body p:has(> .warningtext) {
+  background-color: var(--reaims-warning-bg) !important;
+  border-left: 3px solid var(--reaims-warning) !important;
+}
+
 div.infotextdiv table.infotexttable td.indefault:has(> img.headerImg) + td.indefault {
   padding-left: 10px !important;
 }

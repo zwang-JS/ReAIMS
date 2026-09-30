@@ -68,24 +68,29 @@ CHROME_CANDIDATES = [
     "google-chrome", "chromium", "chrome",
 ]
 
-#: Surfaces we paint deliberately, and the token each must resolve to.
+#: Surfaces we paint deliberately, and what each must resolve to.
 #: Compared against the token *resolved in the same theme*, so retuning the
 #: palette does not break this check — only losing a surface does.
-SURFACES: list[tuple[str, str, str]] = [
-    # (label, css selector, token it must equal)
-    ("page background (canary)", "html", "--reaims-bg"),
-    ("body background (canary)", "body", "--reaims-bg"),
-    ("identity bar", ".cityubar_outer", "--reaims-surface"),
-    ("brand band", ".header_outer", "--reaims-brand-band"),
-    ("sticky nav", ".cityu_noprint", "--reaims-surface"),
-    ("active tab pill", ".pageheaderlinks2 td.tabon", "--reaims-brand"),
-    ("inactive tab pill", ".pageheaderlinks2 td.taboff", "--reaims-surface-3"),
-    ("title rule (bg3)", "div.pagetitlediv td.bg3", "--reaims-line"),
-    ("table sheet", "div.body table.datadisplaytable", "--reaims-surface"),
-    ("table header cell", "div.body table.datadisplaytable :is(td,th).ddheader", "--reaims-surface-3"),
-    ("info callout", "div.infotextdiv table.infotexttable", "--reaims-info-bg"),
-    ("warning callout", "table.hwgksphb_privacy", "--reaims-warning-bg"),
-    ("badge chip (dark: white on purpose)", ".poweredbydiv img", "--reaims-badge-bg"),
+#:
+#: 字段：(标签, 选择器, 背景色应当等于的令牌 或 None, 背景图应当包含的子串 或 None,
+#:        左边框颜色应当等于的令牌 或 None)
+#: 后两项是为新版设计加的：页头那条横线现在由渐变画出（background-color 是透明的），
+#: 表纸左缘那道侧脊是 border-left。用背景色一项是测不到它们的 ——
+#: 而这两个恰恰是整套设计里的"记号"，必须一起守住。
+SURFACES: list[tuple[str, str, str | None, str | None, str | None]] = [
+    ("page background (canary)", "html", "--reaims-bg", None, None),
+    ("body background (canary)", "body", "--reaims-bg", None, None),
+    ("identity bar", ".cityubar_outer", "--reaims-surface", None, None),
+    ("brand band", ".header_outer", "--reaims-brand-band", None, None),
+    ("sticky nav", ".cityu_noprint", "--reaims-surface", None, None),
+    ("active tab (ink bar + magenta index)", ".pageheaderlinks2 td.tabon", "--reaims-ink-bar", None, None),
+    ("inactive tab", ".pageheaderlinks2 td.taboff", "--reaims-surface-2", None, None),
+    ("masthead rule (weighted lead-in)", "div.pagetitlediv td.bg3", None, "linear-gradient", None),
+    ("table sheet", "div.body table.datadisplaytable", "--reaims-surface", None, "--reaims-brand"),
+    ("table header bar (ink)", "div.body table.datadisplaytable :is(td,th).ddheader", "--reaims-ink-bar", None, None),
+    ("info callout", "div.infotextdiv table.infotexttable", "--reaims-info-bg", None, None),
+    ("warning callout", "table.hwgksphb_privacy", "--reaims-warning-bg", None, None),
+    ("badge chip (dark: white on purpose)", ".poweredbydiv img", "--reaims-badge-bg", None, None),
 ]
 
 #: Light surfaces that are intentional in dark mode. Anything here is reported
@@ -201,18 +206,41 @@ PROBE_JS = """
   lines.push('CHECK 2 - deliberate surfaces still painted');
   const SURFACES = %s;
   let bad = 0, checkedCount = 0;
-  for (const [label, sel, tok] of SURFACES) {
+  for (const [label, sel, tok, imgSub, borderTok] of SURFACES) {
     const el = document.querySelector(sel);
     if (!el) { lines.push('  skip   ' + label + '  (' + sel + ' not in this page)'); continue; }
-    const want = token(tok);
-    const got = rgbOf(el);
-    if (!want) { lines.push('  ERR    ' + label + '  token ' + tok + ' did not resolve'); bad++; continue; }
+    const cs = getComputedStyle(el);
+    const problems = [];
+    const wants = [];
+
+    if (tok) {
+      const want = token(tok);
+      const got = rgbOf(el);
+      wants.push(tok + '=rgb(' + (want ? key(want) : '?') + ')');
+      if (!want) problems.push('令牌 ' + tok + ' 解析不出来');
+      else if (!near(got, want)) problems.push('底色 ' + (got ? 'rgb(' + key(got) + ')' : 'none'));
+    }
+    if (imgSub) {
+      wants.push('background-image 含 ' + imgSub);
+      if (!cs.backgroundImage.includes(imgSub)) {
+        problems.push('背景图不对：' + cs.backgroundImage.slice(0, 70));
+      }
+    }
+    if (borderTok) {
+      const want = token(borderTok);
+      const got = parseColor(cs.borderLeftColor);
+      wants.push('border-left=' + borderTok);
+      if (!want) problems.push('令牌 ' + borderTok + ' 解析不出来');
+      else if (!near(got, want)) problems.push('左边框 ' + (got ? 'rgb(' + key(got) + ')' : 'none'));
+    }
+
     checkedCount++;
-    const same = near(got, want);
-    if (!same) bad++;
-    lines.push((same ? '  ok     ' : '  FAIL   ') + label.padEnd(38) + ' ' + tok.padEnd(24) +
-               'want rgb(' + key(want) + ')' +
-               (same ? '' : '  got ' + (got ? 'rgb(' + key(got) + ') alpha=' + got.a : 'none')));
+    if (problems.length) {
+      bad++;
+      lines.push('  FAIL   ' + label.padEnd(40) + ' -> ' + problems.join(' ; '));
+    } else {
+      lines.push('  ok     ' + label.padEnd(40) + ' ' + wants.join('  '));
+    }
   }
   lines.push(bad === 0
     ? '  PASS - all ' + checkedCount + ' surfaces intact'
@@ -248,7 +276,10 @@ def build_probe_page() -> str:
     js = PROBE_JS % (
         "[" + ", ".join('"%s"' % s for s in LIGHT_ALLOWED) + "]",
         LUMINANCE_THRESHOLD,
-        "[" + ", ".join('["%s", "%s", "%s"]' % s for s in SURFACES) + "]",
+        "[" + ", ".join(
+            "[" + ", ".join("null" if x is None else '"%s"' % x for x in s) + "]"
+            for s in SURFACES
+        ) + "]",
     )
     # 生成物放在 out/ 下，链接要多退一级
     for a, b in (('href="../../src/', 'href="../../../src/'),

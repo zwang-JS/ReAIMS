@@ -117,34 +117,42 @@ a.backlinktext,
     display: none !important;
   }
 
-  /* 表纸在纸上不需要阴影和圆角，恢复成朴素的网格表 */
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) {
+  /* 表纸在纸上不需要阴影、圆角、侧脊，恢复成朴素的网格表。
+     【必须和屏幕规则用同一组选择器】—— 屏幕那边有 :is(表类) 与 :has(数据单元格)
+     两支，只写第一支的话，靠 :has() 命中的表（没有 class 的那些）会带着
+     3px 品红侧脊和梅墨表头直接印出来：纸上一道彩色竖线加一片黑条。
+     同特异性时靠源顺序决胜，而本文件排在最后，所以这里能盖住。 */
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable),
+  div.body table:has(> tbody > tr > :is(
+    .ddheader, .dddefault, .ddlabel, .ddtitle,
+    .dbheader, .dbdefault, .dblabel,
+    .deheader, .dedefault, .delabel,
+    .ntlabel, .ntdefault, .mpdefault)) {
     box-shadow: none !important;
     border-radius: 0 !important;
     border: 1px solid #999999 !important;
+    border-left: 1px solid #999999 !important;
     background: #ffffff !important;
   }
 
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th) {
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th),
+  div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ddlabel, .dbheader, .deheader, .ntlabel, .ntdefault, .mpdefault)) :is(td, th) {
     border-top: 1px solid #cccccc !important;
-    /* 表头改成浅灰底 + 深字，黑白打印机也能看出层次 */
+    /* 表头改成浅灰底 + 深字，黑白打印机也能看出层次。
+       深色模式的梅墨条在纸上就是一条黑杠，必须一起压掉。 */
     background-color: #f0f0f0 !important;
     color: #000000 !important;
-  }
-
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :is(td, th) {
-    background-color: #e4e4e4 !important;
-  }
-
-  /* 圆角单元格在打印时也要归零，否则会留下缺口 */
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :first-child,
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :last-child,
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :first-child,
-  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :last-child {
     border-radius: 0 !important;
   }
 
-  /* 表头吸顶在纸上没有意义，反而可能重复绘制 */
+  /* 表头在纸上比数据行再深一格，黑白打印也有层次 */
+  div.body table :is(td, th):is(.ddheader, .dbheader, .deheader, .ntheader, .mpheader, .ddtitle, .dbtitle, .detitle, .nttitle, .mptitle) {
+    background-color: #dcdcdc !important;
+    color: #000000 !important;
+  }
+
+  /* 表头吸顶在纸上没有意义，反而可能重复绘制。
+     特异性要压过屏幕那条 (0,2,2)，所以这里补一层 table。 */
   div.body table :is(td, th):is(.ddheader, .dbheader) {
     position: static !important;
   }

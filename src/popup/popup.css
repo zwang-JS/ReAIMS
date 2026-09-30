@@ -57,7 +57,7 @@ body {
 .ver {
   margin-left: auto;
   font-size: 11px;
-  color: var(--reaims-ink-subtle);
+  color: var(--reaims-ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -117,15 +117,14 @@ body {
 }
 
 .seg button[aria-checked="true"] {
-  background-color: var(--reaims-surface);
-  /* 这里同样要用【前景】令牌，不能用 --reaims-brand。
-     选中项的文字压在 --reaims-surface 上，深色模式下 brand (#C0337A) 只有 3.32:1；
-     换成 link (#F06CA8) 是 6.17:1。
-     （这一处是全仓库扫描"把填充令牌当文字色用"时捞出来的 ——
-      它不在 hover 规则里，只查 :hover 会漏掉。） */
-  color: var(--reaims-link);
+  /* 和导航里选中的标签同一套语言：梅墨条 + 品红索引边。
+     原来这里是"灰轨道 + 凸起白胶囊 + 柔和阴影"，也就是任何 UI 框架都有的那个
+     分段控件 —— 弹窗是产品的一部分，不该是唯一一个不说这套语言的控件。
+     （文字用 --reaims-ink-bar-fg 而不是 --reaims-link：它压在梅墨条上。） */
+  background-color: var(--reaims-ink-bar);
+  color: var(--reaims-ink-bar-fg);
   font-weight: 600;
-  box-shadow: var(--reaims-shadow-sm);
+  box-shadow: inset var(--reaims-spine) 0 0 0 var(--reaims-index-edge);
 }
 
 .seg button:focus-visible {
@@ -170,7 +169,7 @@ body {
   gap: 8px;
   padding: 10px 16px 12px;
   border-top: 1px solid var(--reaims-line);
-  color: var(--reaims-ink-subtle);
+  color: var(--reaims-ink-muted);
   font-size: 11px;
 }
 

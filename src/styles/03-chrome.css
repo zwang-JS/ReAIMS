@@ -221,6 +221,26 @@ div.cityubar_tools a.submenulinktext2:focus {
   display: none;
 }
 
+/* 窄窗口下把滚动条显出来。
+   标签条在窄屏是横向滚动的，而上面把滚动条隐藏了 —— 620px 时六个标签只看得到
+   两个，却没有任何"右边还有"的提示。宽屏放得下，不显示；窄屏给一条细的。 */
+@media (max-width: 1023px) {
+  .pageheaderlinks2 {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--reaims-line-strong) transparent;
+  }
+
+  .pageheaderlinks2::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .pageheaderlinks2::-webkit-scrollbar-thumb {
+    background: var(--reaims-line-strong);
+    border-radius: 3px;
+  }
+}
+
 /* --- 标签条本体 ---------------------------------------------------------
    只命中【内层】标签表。外层布局表虽然也含 .tabon，但它的子代链是
    tbody > tr > td.pldefault，所以必须用子代组合器才能排除掉它。
@@ -248,26 +268,40 @@ div.cityubar_tools a.submenulinktext2:focus {
   /* 干掉 background-image: url(/cityu2/gifs/web_tab_corner.gif) */
   background-image: none !important;
   border: 0 !important;
-  border-radius: var(--reaims-r);
+  /* 圆角收小：6px 是"控制项"，不是"胶囊"。整站只有卡片用 10px，
+     圆角大小本身在编码层级，胶囊化的标签会让导航看起来比内容还软。 */
+  border-radius: var(--reaims-r-sm);
   padding: 0 !important;
   height: auto !important;
   white-space: nowrap !important;
-  transition: background-color var(--reaims-dur) var(--reaims-ease);
+  transition: background-color var(--reaims-dur) var(--reaims-ease),
+              box-shadow var(--reaims-dur) var(--reaims-ease);
 }
 
-/* 未选中的标签必须也有一层底色。
-   否则整条导航看起来就是"一个品红胶囊 + 五段普通文字"，
-   读不出它是一个控件、也看不出这五个是可替换的平级选项。 */
+/* 未选中：极浅的底 + 一圈发丝描边。
+   用描边而不是加深填充，是为了让六个标签"看得出是一组控件"但又不像一排按钮 ——
+   纯填充要够显眼就得够深，一排深底按钮会把当前页那块梅墨条压下去。 */
 .pageheaderlinks2 td.taboff {
-  background-color: var(--reaims-surface-3) !important;
+  background-color: var(--reaims-surface-2) !important;
+  box-shadow: inset 0 0 0 1px var(--reaims-line) !important;
 }
 
+/* 当前页：改成【梅墨条 + 品红索引边】，而不是一块实心品红。
+   理由是让导航和表头说同一种语言 —— 表头也是梅墨条，于是"梅墨 = 当前/结构"
+   在全站是一致的；品红则退回到它在别处的角色：标记（表纸侧脊、页头横线的起笔），
+   在这里就是左侧那 3px。实心品红胶囊虽然更响，但它把"品牌色"和"当前项"
+   两件事叠在一起，反而两边都说不清楚。 */
 .pageheaderlinks2 td.tabon {
-  background-color: var(--reaims-brand) !important;
+  background-color: var(--reaims-ink-bar) !important;
+  /* 用 --reaims-index-edge 而不是 --reaims-brand：品牌品红压在梅墨条上
+     只有 2.38:1（浅）/ 2.84:1（深），低于非文字元素 3:1 的门槛；
+     而深色模式下这道边几乎是"我在哪一页"的唯一线索。 */
+  box-shadow: inset var(--reaims-spine) 0 0 0 var(--reaims-index-edge) !important;
 }
 
 .pageheaderlinks2 td.taboff:hover {
-  background-color: var(--reaims-brand-soft) !important;
+  background-color: var(--reaims-surface-3) !important;
+  box-shadow: inset 0 0 0 1px var(--reaims-line-strong) !important;
 }
 
 /* Banner 原本是 #F2F2F2 文字压在 #cccccc 底上，对比度约 1.35:1 —— 本来就不可读 */
@@ -285,7 +319,8 @@ div.cityubar_tools a.submenulinktext2:focus {
 .pageheaderlinks2 .tabon a:hover,
 .pageheaderlinks2 .tabon a:focus,
 .pageheaderlinks2 .tabon a:active {
-  color: var(--reaims-on-brand) !important;
+  /* 文字压在梅墨条上，所以用梅墨条的前景色，不是品牌前景色 */
+  color: var(--reaims-ink-bar-fg) !important;
   text-decoration: none !important;
 }
 
@@ -357,43 +392,72 @@ div.pagetitlediv p {
 div.pagetitlediv table.plaintable {
   margin: 0 !important;
   background: transparent !important;
+  /* 表格默认 border-spacing: 2px，会把下面那条 bg3 横线整体右移 2px ——
+     而那条横线的品红起笔本来就要和表纸左缘的侧脊对齐成一条线，
+     差 2px 整条记号就散了。 */
+  border-spacing: 0 !important;
 }
 
-/* Banner 用 "Times New Roman" + 1.8em + 颜色 #444444 + font-weight: normal */
+/* 页标题 —— 全站最大的一次尺度跳跃（12px 元信息 -> 34px 标题）。
+   Banner 原本是 "Times New Roman" + 1.8em + #444444 + font-weight: normal。
+   大字必须配更紧的字距与行高，否则会散开、显得比实际更小。 */
 div.pagetitlediv h2 {
   font-family: var(--reaims-font) !important;
   font-size: var(--reaims-fs-h2) !important;
-  font-weight: 600 !important;
+  font-weight: var(--reaims-fw-title) !important;
   color: var(--reaims-ink) !important;
-  letter-spacing: var(--reaims-tracking-tight) !important;
-  line-height: var(--reaims-lh-tight) !important;
-  margin: 0 !important;
+  letter-spacing: var(--reaims-tracking-title) !important;
+  line-height: var(--reaims-lh-title) !important;
+  /* 页标题与下面那条线之间留出气口；这是整页最需要留白的地方 */
+  margin: 0 0 var(--reaims-sp-4) !important;
 }
 
-/* 原来那条亮黄色 (#cccc00) 色带：格子里只放了一张 3px 高的透明 GIF，
-   靠行盒撑出高度。做法是把 GIF 真正 display:none 掉（而不是 height:0），
-   这样匿名行盒消失，高度就能精确控制在 1px。 */
+/* 标题格所在的这一行按【基线】对齐 —— 右边那行 "Term: 2026/27 Semester A"
+   因此会落在标题的基线上，而不是浮在它顶部。这是排版上唯一"对"的位置，
+   而且不需要动任何 DOM。 */
+div.pagetitlediv td.pldefault {
+  vertical-align: baseline !important;
+}
+
+/* 原来那条亮黄色 (#cccc00) 色带：格子里只放了一张 3px 高的透明 GIF。
+   做法是把 GIF 真正 display:none 掉（而不是 height:0），匿名行盒才会消失，
+   高度就能精确控制。
+   现在它是一条【带起笔的横线】：左侧 56px 是品红实笔（和表纸左缘那道侧脊同一颜色、
+   同一起点，两者在视觉上连成一条贯穿全页左缘的记号线），再往右接一条发丝线。
+   两层背景：一层 2px 画品红段，一层 1px 画发丝段，底对齐。 */
 div.pagetitlediv img[src$="web_transparent.gif"] {
   display: none !important;
 }
 
 div.pagetitlediv td.bg3 {
-  height: 1px !important;
+  height: 2px !important;
   padding: 0 !important;
   margin: 0 !important;
   border: 0 !important;
   font-size: 0 !important;
   line-height: 0 !important;
-  background-color: var(--reaims-line) !important;
-  background-image: none !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(90deg,
+      var(--reaims-brand) 0 var(--reaims-rule-start),
+      transparent var(--reaims-rule-start)),
+    linear-gradient(90deg,
+      transparent 0 var(--reaims-rule-start),
+      var(--reaims-line) var(--reaims-rule-start));
+  background-size: 100% 2px, 100% 1px !important;
+  background-position: left top, left bottom !important;
+  background-repeat: no-repeat !important;
 }
 
 /* 右上角的 staticheaders（例如 "Term: 2026/27 Semester A"）当副标题处理，
-   它是数据页上重要的上下文信息，不能藏。 */
+   它是数据页上重要的上下文信息，不能藏。
+   刻意【不】做成大写字距拉开的小标签 —— 那是很典型的模板腔。 */
 .staticheaders {
   color: var(--reaims-ink-muted) !important;
-  font-size: var(--reaims-fs-sm) !important;
+  font-size: var(--reaims-fs-xs) !important;
+  letter-spacing: 0.004em !important;
   text-align: right !important;
+  white-space: nowrap;
 }
 
 /* --------------------------------------------------------------------------
@@ -441,15 +505,20 @@ div.footer_inner table.plaintable {
 }
 
 .poweredbydiv img {
-  width: 100px !important;
+  /* 收到 84px：这三个是第三方位图徽章，没有任何状态，却是页脚上最亮的东西 ——
+     深色模式下它们曾经是全页唯一亮度超过 250 的像素，压过了所有真实内容。 */
+  width: 84px !important;
   height: auto !important;
-  padding: 3px 6px;
+  padding: 2px 5px;
   /* 必须带 !important。02-base.css 里那条零特异性的背景中和规则是 `!important`，
      而 !important 之间先看重要性再看特异性 —— 这条普通声明会被它直接清掉，
      深色模式下白片消失、黑色徽章压在深色页脚上等于看不见。
      （同文件里其它背景规则本来就都带了，这条是漏网。） */
   background: var(--reaims-badge-bg) !important;
   border-radius: var(--reaims-r-sm) !important;
+  /* 85% 让深色下的白片退成浅灰，不再刺眼；浅色下 85% 压在白上几乎看不出来。
+     用 opacity 而不是再加一个主题分支：它对底片和图案一视同仁，而这里正是想要这样。 */
+  opacity: 0.85;
   vertical-align: middle;
 }
 
@@ -464,8 +533,16 @@ div.footer_inner table.plaintable {
   font-weight: 400 !important;
 }
 
-/* Banner 在一堆容器上写了 outline: 0，键盘用户会丢掉焦点指示 */
-.pageheaderlinks2 a:focus-visible,
+/* Banner 在一堆容器上写了 outline: 0，键盘用户会丢掉焦点指示。
+   标签条这里必须用【内缩】的焦点环（负 offset）：.pageheaderlinks2 上有
+   overflow-x: auto 且高度正好等于标签本身，向外的环会被裁成左右两条竖线 ——
+   看起来像渲染坏了，而且上下两边等于没有指示。 */
+.pageheaderlinks2 a:focus-visible {
+  outline: 2px solid var(--reaims-brand) !important;
+  outline-offset: -2px !important;
+  border-radius: var(--reaims-r-sm);
+}
+
 .cityubar_tools a:focus-visible {
   outline: 2px solid var(--reaims-brand) !important;
   outline-offset: 2px !important;

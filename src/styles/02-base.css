@@ -104,6 +104,22 @@ body:not(:has(.cityubar_outer)) {
   padding: var(--reaims-sp-6) var(--reaims-sp-5) !important;
 }
 
+/* 这些裸页面完全没有标题层级：pics.htm 的抬头是两行和正文同字号、同颜色的
+   <p>，整页没有落脚点，而它承载的偏偏是法律声明。
+   给 <center> 里的第一段一个标题档，第二段降为副题。 */
+body:not(:has(.cityubar_outer)) center p {
+  font-size: var(--reaims-fs-h3) !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--reaims-tracking-tight) !important;
+  margin: var(--reaims-sp-4) 0 !important;
+}
+
+body:not(:has(.cityubar_outer)) center p + p {
+  font-size: var(--reaims-fs) !important;
+  font-weight: 400 !important;
+  color: var(--reaims-ink-muted) !important;
+}
+
 /* --------------------------------------------------------------------------
    <font> 标签归一化
    AIMS 里到处都是 <font color=... size=...>。其中 .cityu_noprint 里
@@ -306,4 +322,10 @@ p {
    同特异性同重要性时后者胜出，所以表头等仍然能保留各自的处理。 */
 th, td {
   color: var(--reaims-ink) !important;
+  /* 必须显式声明字体。Banner 在几十个单元格 class 上（.ddheader / .pldefault /
+     .mpdefault / .ntlabel / .staticheaders …）写了 font-family: Verdana，而我在
+     那些角色规则里只改了字号、字重和颜色，从没写过 font-family —— 于是"声明了的
+     那一方"胜出，全站最重的那几个元素（表头墨条、表题、Term 那一行）一直渲染在
+     Verdana 里，不是我们的字体栈。一条 (0,0,1) + !important 就能全盖住。 */
+  font-family: var(--reaims-font) !important;
 }

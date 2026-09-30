@@ -35,7 +35,10 @@
   /* ---------- 品牌色 ----------------------------------------------------
      沿用 AIMS 自身的品红 #A50B5E（它原本就用在选中标签上），保留校本识别度。 */
   --reaims-brand: light-dark(#a50b5e, #c0337a);
-  --reaims-brand-hover: light-dark(#8a094e, #d6458c);
+  /* 深色端从 #d6458c 收到 #bf2f74：按钮上的白字压在 #d6458c 上只有 4.13:1，
+     低于 4.5:1。收到的同时方向也和浅色一致了 —— 浅色是 hover 变深
+     （#a50b5e -> #8a094e），原来的深色端却是变亮，两边语义相反。 */
+  --reaims-brand-hover: light-dark(#8a094e, #bf2f74);
   --reaims-brand-soft: color-mix(in oklab, var(--reaims-brand) 10%, var(--reaims-surface));
   --reaims-brand-line: color-mix(in oklab, var(--reaims-brand) 28%, var(--reaims-surface));
   --reaims-on-brand: #ffffff;
@@ -57,25 +60,58 @@
   --reaims-link-hover: light-dark(#8a094e, #ff8fc0);
   --reaims-link-visited: light-dark(#7a2a72, #d99ae0);
 
-  /* ---------- 承载面 ---------------------------------------------------- */
+  /* ---------- 承载面 ----------------------------------------------------
+     深色端的这几档被整体抬过一次。原因：在近黑页面上，"抬起的面"靠填充色
+     是拉不开的 —— 实测深色下表纸与页面只有 1.07:1，整张纸等于没有边界。
+     所以深色下靠【描边】建立边界（见 04-tables 的表纸 ring），同时把面抬起来
+     让层次至少存在。浅色端不动。 */
   --reaims-bg: light-dark(#f6f5f7, #131216);
-  --reaims-surface: light-dark(#ffffff, #1a191f);
-  --reaims-surface-2: light-dark(#fbfafc, #211f27);
-  --reaims-surface-3: light-dark(#f2f1f5, #26242d);
-  --reaims-field: light-dark(#ffffff, #1f1d25);
-  --reaims-field-disabled: light-dark(#eeeef1, #2a2831);
+  --reaims-surface: light-dark(#ffffff, #1e1c23);
+  --reaims-surface-2: light-dark(#fbfafc, #26232c);
+  --reaims-surface-3: light-dark(#f2f1f5, #2d2a34);
+  --reaims-field: light-dark(#ffffff, #24222a);
+  --reaims-field-disabled: light-dark(#eeeef1, #2f2c37);
 
-  /* ---------- 文字 ------------------------------------------------------ */
+  /* ---------- 文字 ------------------------------------------------------
+     ink-subtle 是第三档文字色（页脚版本号、占位符）。原值在浅色下只有 3.17:1、
+     深色下 4.50:1 差一点点 —— 是实测扫过全页每一段文字之后发现并改掉的。 */
   --reaims-ink: light-dark(#17161a, #edebf1);
   --reaims-ink-muted: light-dark(#63616b, #a09eac);
-  --reaims-ink-subtle: light-dark(#8b8994, #7d7b88);
+  --reaims-ink-subtle: light-dark(#6f6e78, #8a8894);
   --reaims-ink-on-brand: #ffffff;
+
+  /* ---------- 表头墨条（structural ink）---------------------------------
+     刻意【不是】中性近黑，而是一个偏品红的"梅墨"（plum-black）。
+     理由：页面上的结构性重色（表头横条）如果取中性黑，会和品牌品红互相打架；
+     取一个带品红底调的黑，两者才是同一个色系里的深浅关系。
+     这是整套设计里最重的一块颜色，也是"这是一份正式记录"的主要来源。
+
+     两端的取值都调过：
+     · 浅色端从 #1b1620 提到 #241a2c —— 前者蓝红只差 5/255，在 1x 下看起来
+       就是最普通的那种黑色表头，完全读不出"梅墨"；拉开色度才立得住。
+     · 深色端从 #2a2530 提到 #3a3442 —— 原值和纸面只有 1.17:1，
+       整套设计最重的那块颜色在深色模式下几乎不存在。
+       注意深色下的上限是客观的：近黑页面上填充色对比度最多也就 1.5:1 左右，
+       所以深色表的边界还额外靠描边（见 04-tables）。 */
+  --reaims-ink-bar: light-dark(#241a2c, #3a3442);
+  --reaims-ink-bar-fg: light-dark(#f8f5f9, #edebf1);
+
+  /* 当前标签左侧那道索引边。
+     不能用 --reaims-brand：它在梅墨条上只有 2.38:1（浅）/ 2.84:1（深），
+     低于非文字元素 3:1 的要求，而深色模式下它几乎是"我在哪一页"的唯一线索。 */
+  --reaims-index-edge: light-dark(#c0337a, #d03d86);
 
   /* ---------- 线条 ------------------------------------------------------
      数据表内部靠"发丝线"建立结构，而不是靠框，所以线色要足够轻。 */
   --reaims-line: light-dark(#e6e4ea, #2c2a34);
   --reaims-line-strong: light-dark(#d3d0da, #3a3743);
   --reaims-line-focus: var(--reaims-brand);
+
+  /* 记录侧脊：每张"表纸"左缘那道品红竖线，以及页头横线的起笔宽度。
+     这是全站唯一的"记号"——它把"登记簿"这件事说清楚，也把品红从
+     "只有链接和选中项才出现"提升为承重的结构色。 */
+  --reaims-spine: 3px;
+  --reaims-rule-start: 72px;
 
   /* ---------- 语义色 ---------------------------------------------------- */
   --reaims-danger: light-dark(#b91c1c, #ff9b95);
@@ -112,18 +148,25 @@
     Arial, "Noto Sans", "PingFang HK", "PingFang SC", "Microsoft JhengHei",
     "Microsoft YaHei", sans-serif;
 
-  /* 基准 15px / 行高 1.55。Banner 原本是 90%×16 = 14.4px / 1.2em，密而挤。 */
+  /* 基准 15px / 行高 1.55。Banner 原本是 90%×16 = 14.4px / 1.2em，密而挤。
+     尺度是刻意拉开的：12px 的元信息 -> 15px 正文 -> 19px 小节 -> 34px 页标题，
+     接近 3 倍。之前每档只差 2~3px，于是整体读起来"什么都在中间"，没有主次，
+     这是它显得中规中矩的主要原因之一。 */
   --reaims-fs: 15px;
   --reaims-fs-sm: 13px;
   --reaims-fs-xs: 12px;
   --reaims-fs-lg: 17px;
   --reaims-fs-h4: 15px;
-  --reaims-fs-h3: 17px;
-  --reaims-fs-h2: 24px;
+  --reaims-fs-h3: 19px;
+  --reaims-fs-h2: 34px;
   --reaims-fs-h1: 30px;
   --reaims-lh: 1.55;
   --reaims-lh-tight: 1.25;
+  /* 大字号需要更紧的行高与字距才不散；小字反而不能动字距 */
+  --reaims-lh-title: 1.12;
   --reaims-tracking-tight: -0.011em;
+  --reaims-tracking-title: -0.022em;
+  --reaims-fw-title: 700;
 
   /* ---------- 圆角 ------------------------------------------------------
      圆角只编码"容器"。给表纸 10px、给控件 8px、给行 0。 */
@@ -134,10 +177,12 @@
   --reaims-r-pill: 999px;
 
   /* ---------- 阴影 ------------------------------------------------------
-     只给表纸和浮层。柔而低，不要扩散。 */
-  --reaims-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
-  --reaims-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 14px -6px rgb(0 0 0 / 0.1);
-  --reaims-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.18);
+     带一点品红底调，而不是中性黑：中性黑影会让纸面看起来像浮在一层灰雾上，
+     带品牌色的影子才像是"同一套材料"。落点也更远、更收（大扩散、负 spread），
+     这样是"纸张离桌面有一点高度"，不是"发光的卡片"。 */
+  --reaims-shadow-sm: 0 1px 1px rgb(27 22 32 / 0.05), 0 2px 6px -2px rgb(27 22 32 / 0.08);
+  --reaims-shadow: 0 1px 2px rgb(27 22 32 / 0.06), 0 10px 26px -14px rgb(27 22 32 / 0.30);
+  --reaims-shadow-lg: 0 2px 6px rgb(27 22 32 / 0.08), 0 22px 48px -18px rgb(27 22 32 / 0.42);
 
   /* ---------- 间距 ------------------------------------------------------ */
   --reaims-sp-1: 4px;

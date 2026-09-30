@@ -68,10 +68,13 @@ select {
   cursor: pointer;
 }
 
+/* 只改底色，【不】改边框色。
+   改了边框色的话，输入框会同时出现"品红边框 + 外面一圈品红 outline"两道同心环，
+   而按钮、复选框只有一道 —— 同一页面上两种焦点样式。焦点环统一由 02-base 的
+   :focus-visible 提供。 */
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--reaims-brand) !important;
   background-color: var(--reaims-surface) !important;
 }
 
@@ -181,6 +184,22 @@ input[type="reset"].cityu_button_100,
 input.cityu_button_100 {
   padding-left: 0 !important;
   padding-right: 0 !important;
+  /* 当成次要动作：tonal 底 + 描边，而不是第二块实心品红。
+     Banner 用这个类来表示"一排等宽按钮"，出现在动作组里；
+     而目录页上 Submit 与 Continue 并排、两者都是一样的实心品红、
+     中间只隔一个灰色的 Reset —— 整页就没有主次了。
+     这是一个判断：假定裸的 input[type=submit] 才是主操作。 */
+  background-color: var(--reaims-surface-2) !important;
+  color: var(--reaims-ink) !important;
+  border: 1px solid var(--reaims-line-strong) !important;
+}
+
+input[type="submit"].cityu_button_100:hover,
+input[type="button"].cityu_button_100:hover,
+input[type="reset"].cityu_button_100:hover,
+input.cityu_button_100:hover {
+  background-color: var(--reaims-surface-3) !important;
+  border-color: var(--reaims-ink-muted) !important;
 }
 
 /* --------------------------------------------------------------------------

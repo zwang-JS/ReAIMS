@@ -37,6 +37,19 @@ TWO THINGS IN HERE LOOK WRONG AND ARE NOT. READ BEFORE EDITING.
    hides exactly what needs looking at.
 
 
+FIXTURE 1 NEEDS A LOCAL FILE.
+
+   Fixture 1 is lifted from ``source code.html`` at the repo root -- a real AIMS
+   page captured from the live site. That file is NOT committed: a saved AIMS
+   page carries session-scoped identifiers, and this repo is public, so it is
+   gitignored and must be supplied locally.
+
+   Without it the build does not fail. It skips fixture 1, emits a loud
+   placeholder in its place, and warns on stderr; fixtures 2-5 and the cascade
+   check are unaffected. To restore it, open AIMS, save the page's HTML to
+   ``source code.html``, and re-run.
+
+
 ONE PREREQUISITE.
 
    Run ``python tools/preview/fetch_vendor.py`` once after cloning, before
@@ -218,15 +231,23 @@ def vendorise(markup: str) -> str:
 # Fixture 1 -- lifted verbatim from source code.html
 # --------------------------------------------------------------------------
 
-def load_fixture_1() -> str:
-    """Return the captured AIMS page body, verbatim apart from <script> removal.
+def load_fixture_1() -> str | None:
+    """Return the captured AIMS page body, or None if the capture is absent.
 
     The capture is a ``<body>...</body>`` fragment. We drop the outer body tags
     (the harness has its own <body>) and strip every ``<script>`` block: the
     session-timeout block would run and error offline, and the Google tag block
     would make a real network request to googletagmanager.com. Nothing else is
     touched -- the markup is byte-accurate and deliberately left unformatted.
+
+    ``source code.html`` is gitignored (a saved AIMS page carries session-scoped
+    identifiers), so a fresh clone will not have it. Absence is not an error:
+    fixture 1 is skipped and a visible placeholder is emitted in its place, so
+    that fixtures 2-5 -- and the cascade check they exist for -- still run.
     """
+    if not SOURCE_PAGE.exists():
+        return None
+
     text = SOURCE_PAGE.read_text(encoding="utf-8")
     # Normalise CRLF so the generated file is LF-only and deterministic.
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -244,6 +265,64 @@ def load_fixture_1() -> str:
         flags=re.IGNORECASE | re.DOTALL,
     )
     return body.strip()
+
+
+#: Emitted at fixture 1's position when the capture is absent.
+#:
+#: Styled inline rather than from a harness-chrome class on purpose: adding CSS
+#: rules would change preview.html's bytes in the normal (capture present) case,
+#: and that output has to stay frozen. A placeholder that only appears when
+#: something is missing is not worth perturbing the everyday artifact for.
+#: It is deliberately loud -- a silent empty fixture would read as "rendered
+#: fine", which is the exact confusion this is here to prevent.
+FIXTURE_1_PLACEHOLDER = """\
+<div style="border: 2px dashed #B3261E; background: #FDECEA; color: #7A1C14; padding: 18px 20px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.55;">
+<p style="margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">Fixture 1 unavailable &mdash; this is a placeholder, not AIMS markup</p>
+<p style="margin: 0 0 8px;">The captured AIMS page (<code>source code.html</code>) is not in this repository. It is gitignored because a saved AIMS page carries session-scoped identifiers, so it has to be supplied locally.</p>
+<p style="margin: 0 0 8px;">Fixtures 2&ndash;5 are synthesised and still render normally, so the cascade check is unaffected.</p>
+<p style="margin: 0;">To restore this fixture: open AIMS in Chrome, save the page's HTML to <code>source code.html</code> at the repo root, then re-run <code>python tools/preview/build_preview.py</code>.</p>
+</div>"""
+
+
+def warn_missing_capture() -> None:
+    """Print a loud stderr warning when the fixture 1 capture is absent.
+
+    Same voice as the vendor preflight: what is missing, why it matters, and the
+    exact command to fix it. Deliberately not fatal -- fixtures 2-5 and the
+    cascade check do not depend on the capture.
+    """
+    print(
+        "\n".join(
+            [
+                "",
+                _BANG,
+                "!!",
+                "!!  FIXTURE 1 SKIPPED -- THE CAPTURED AIMS PAGE IS NOT HERE",
+                "!!",
+                _BANG,
+                "",
+                f"  Missing: {SOURCE_PAGE.name}  (repo root)",
+                "",
+                "  The pages were still written and fixtures 2-5 render normally, so the",
+                "  cascade check is unaffected. But fixture 1 -- the real, byte-accurate",
+                "  AIMS main menu, which is the only fixture made of genuine captured",
+                "  markup -- is replaced by a visible placeholder.",
+                "",
+                "  Why it is not committed: a saved AIMS page carries session-scoped",
+                "  identifiers. This repo is public, so the capture is gitignored and",
+                "  has to be supplied locally rather than redistributed.",
+                "",
+                "  To restore fixture 1: open AIMS in Chrome, save the page's HTML to",
+                f"  {SOURCE_PAGE.name} at the repo root, then re-run this script.",
+                "",
+                "  Nothing else is affected. The vendor preflight below is separate.",
+                "",
+                _BANG,
+                "",
+            ]
+        ),
+        file=sys.stderr,
+    )
 
 
 # --------------------------------------------------------------------------
@@ -1062,8 +1141,14 @@ Email: <a href="mailto:it.servicedesk@cityu.edu.hk">it.servicedesk@cityu.edu.hk<
 
 def render_preview() -> str:
     """Build preview.html."""
+    capture = load_fixture_1()
     fixtures = {
-        "@@FIXTURE_1@@": vendorise(load_fixture_1()),
+        # None means the gitignored capture is absent: emit a placeholder that
+        # is unmistakably not AIMS markup rather than an empty, plausible-
+        # looking fixture.
+        "@@FIXTURE_1@@": (
+            vendorise(capture) if capture is not None else FIXTURE_1_PLACEHOLDER
+        ),
         # Fixtures 2-5 get the real AIMS title block + div.body wrapper: the
         # extension scopes its tabular treatment to div.body, so without this
         # they would not exercise the design at all.
@@ -1134,31 +1219,87 @@ def _write(path: Path, page: str) -> None:
     print(f"wrote {path} ({len(page.encode('utf-8')):,} bytes, {page.count(chr(10))} lines)")
 
 
+#: Section boundaries used to exclude fixture 1 from a --check comparison.
+_F1_OPEN = '<section class="harness-section" id="fixture-1">'
+_F1_CLOSE = '<section class="harness-section" id="fixture-2">'
+
+
+def _without_fixture_1(page: str) -> str | None:
+    """Return ``page`` with the whole fixture-1 section removed.
+
+    Used by ``--check`` when the capture is absent: the committed preview.html
+    contains real fixture 1 markup while a fresh build contains the placeholder,
+    so comparing the two wholesale would report a difference that is expected
+    rather than a drift. Returns None if the boundaries are not found, which
+    makes the caller fall back to a strict comparison.
+    """
+    try:
+        start = page.index(_F1_OPEN)
+        end = page.index(_F1_CLOSE)
+    except ValueError:
+        return None
+    if end < start:
+        return None
+    return page[:start] + page[end:]
+
+
 def main(argv: list[str]) -> int:
+    capture_present = SOURCE_PAGE.exists()
     pages = ((OUT_PREVIEW, render_preview()), (OUT_BARE, render_bare()))
 
-    # Preflight before anything else: with the vendored stylesheet missing, the
-    # pages still build and still look fine while testing nothing. Say so loudly.
+    # Both preflights are advisory: the build always completes and always exits
+    # 0, because in both cases the pages are still worth having -- they just do
+    # not mean what they look like they mean.
+    if not capture_present:
+        warn_missing_capture()
+
     missing = find_missing_vendor_assets(*(page for _, page in pages))
     if missing:
         warn_missing_vendor(missing)
 
     if "--check" in argv:
         stale = []
+        skipped = []
         for path, page in pages:
             current = path.read_text(encoding="utf-8") if path.exists() else None
-            if current != page:
-                stale.append(path)
-                print(f"STALE: {path} differs from the templates", file=sys.stderr)
+            if current == page:
+                continue
+            # Without the capture we cannot reproduce fixture 1, so preview.html
+            # legitimately differs from the committed one. Compare everything
+            # except that section rather than crying STALE over a known,
+            # expected difference -- a false STALE is worse than no check.
+            if not capture_present and path == OUT_PREVIEW and current is not None:
+                stripped_current = _without_fixture_1(current)
+                stripped_new = _without_fixture_1(page)
+                # Both must be non-None: None == None would otherwise "match"
+                # and silently pass a file whose boundaries we never found.
+                if (
+                    stripped_current is not None
+                    and stripped_new is not None
+                    and stripped_current == stripped_new
+                ):
+                    skipped.append(path)
+                    continue
+            stale.append(path)
+            print(f"STALE: {path} differs from the templates", file=sys.stderr)
         if stale:
             return 1
-        print("up to date: both pages match the templates")
+        if skipped:
+            print(
+                "up to date apart from fixture 1: capture absent, so preview.html "
+                "was compared with that section excluded"
+            )
+        else:
+            print("up to date: both pages match the templates")
         return 0
 
     for path, page in pages:
         _write(path, page)
 
-    print(f"  fixture 1 sourced from {SOURCE_PAGE}")
+    if capture_present:
+        print(f"  fixture 1 sourced from {SOURCE_PAGE}")
+    else:
+        print(f"  fixture 1 SKIPPED -- {SOURCE_PAGE.name} absent (placeholder emitted)")
     print(f"  {len(STYLESHEETS)} extension stylesheets + Banner's, in inverted cascade order")
     if missing:
         print("  vendor preflight FAILED -- cascade check inactive (see warning above)")

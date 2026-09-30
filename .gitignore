@@ -28,3 +28,11 @@ tools/preview/out/
 # 这些东西不属于本项目，本仓库又是公开的，所以不随仓库分发 ——
 # 用 tools/preview/fetch_vendor.py 按需从公开地址下载。
 tools/preview/vendor/
+
+# 抓取下来的 AIMS 页面本体（预览台的 fixture 1 源材料）。
+# 不入库的原因和 vendor/ 不同 —— 它是【隐私】问题而不是版权：
+# 保存下来的页面里带着会话期标识（twbktmlb_cityu 的 in_pd / in_ran），
+# 那是属于个人会话的东西，不该进公开仓库。
+# 想恢复 fixture 1：自己登录 AIMS，把页面 HTML 存成本文件名放到仓库根目录即可。
+# 见 README「关于 source code.html」。
+source code.html

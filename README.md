@@ -128,11 +128,14 @@ ReAIMS/
     ├── gen_icons.py            生成扩展图标（Pillow）
     └── preview/                静态预览台（见下）
         ├── fetch_vendor.py     抓取第三方资源（vendor/ 不入库）
-        ├── build_preview.py    由 source code.html 与内置样例合成
+        ├── build_preview.py    由本地抓取的页面与内置样例合成
         ├── audit_overrides.py  覆盖完备性审计（含自检）
         ├── preview.html        主预览页
         └── preview-bare.html   无外壳的裸弹窗页样例
 ```
+
+> 预览台的 fixture 1 需要一份**你自己抓取的 AIMS 页面**，放在仓库根目录的 `source code.html`。
+> 该文件不入库，见下方「关于 source code.html」。
 
 ### 数字前缀 = 层叠顺序
 
@@ -150,7 +153,7 @@ ReAIMS/
 # 首次使用先抓一次第三方资源（理由见下）—— 这一步不能跳过
 python tools/preview/fetch_vendor.py
 
-# 重新生成页面（会从 source code.html 与内置样例合成）
+# 重新生成页面（fixture 1 需要根目录的 source code.html，没有就跳过它并给出提示）
 python tools/preview/build_preview.py
 
 # 截图核对
@@ -178,6 +181,22 @@ python tools/preview/build_preview.py
 这些东西的版权属于 CityU、Ellucian/SunGard 与 Apple/Google，而本仓库是公开的，所以**不随仓库分发**：`tools/preview/vendor/` 已在 `.gitignore` 里，改由 `tools/preview/fetch_vendor.py` 从浏览器使用的同一批公开地址按需下载到本地。
 
 **缺了它会怎样**：预览台照样能打开、看起来也正常，但它**不再验证层叠覆盖** —— 而那正是这个预览台存在的唯一理由。构建脚本检测到缺失时会打印醒目警告，不会让你在不知情的情况下相信一次没有发生的验证。
+
+#### 关于 source code.html（这个不入库是隐私原因，不是版权原因）
+
+预览台的 fixture 1 用的是你登录 AIMS 后抓下来的真实页面标记 —— 那是这类验证里最有价值的一份材料，因为它是唯一"未经我手改造"的真实结构。
+
+但它**不适合进公开仓库**：抓下来的页面里带着会话期标识。具体来说，AIMS 的会话保活脚本里有这样一段：
+
+```
+twbktmlb_cityu.P_Release_Timeout?in_pd=1627904&in_tm=…&in_ran=222415025121659092630
+```
+
+`in_pd`、`in_ran` 都是属于个人会话的值。所以 `source code.html` 已被移出版本控制并写入 `.gitignore`。
+
+**要恢复 fixture 1**：自己登录 AIMS，把该页面的 HTML 另存为仓库根目录的 `source code.html`，再跑 `python tools/preview/build_preview.py`。缺这个文件时构建不会崩 —— 它会在 fixture 1 的位置放一个明确标注的占位块，并打印提示，其余四组样例照常生成。
+
+顺带确认过一件事：`preview.html` 里**不含**这些会话标识（`in_pd` / `in_ran` 命中数为 0）。因为构建时会把 fixture 1 的两个 `<script>` 整块剥掉，而那几个值正好都在会话保活脚本里。
 
 ### 重新生成图标
 

@@ -156,12 +156,24 @@ python tools/preview/fetch_vendor.py
 # 重新生成页面（fixture 1 需要根目录的 source code.html，没有就跳过它并给出提示）
 python tools/preview/build_preview.py
 
-# 截图核对
-"/c/Program Files/Google/Chrome/Application/chrome.exe" \
-  --headless=new --disable-gpu --hide-scrollbars \
-  --screenshot=tools/preview/out/light.png --window-size=1440,3000 \
-  "file:///C:/Users/26229/OneDrive/Desktop/ReAIMS/tools/preview/preview.html?theme=light"
+# 截图核对。注意两点，都是实测踩出来的：
+#   1. out/ 目录不会随仓库分发（已 gitignore），必须自己建；
+#   2. --screenshot 不认相对路径，必须给绝对路径，否则只会得到
+#      "Failed to write file ... path not found"，而 Chrome 仍然退出 0（静默失败）。
+mkdir -p tools/preview/out
+
+CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
+REPO="C:/path/to/ReAIMS"          # ← 改成你这个仓库的绝对路径，正斜杠
+
+"$CHROME" --headless=new --disable-gpu --hide-scrollbars \
+  --screenshot="$REPO/tools/preview/out/light.png" --window-size=1440,3000 \
+  "file:///$REPO/tools/preview/preview.html?theme=light"
 ```
+
+> **headless Chrome 起不来的话**：如果报 `Missing headless user data directory`，是默认
+> profile 被占用了（你自己开着 Chrome 就会这样）。加一个独立 profile 即可：
+> `--user-data-dir=/tmp/reaims-chrome`。本仓库的 `audit_overrides.py` 已经自带这个处理，
+> 所以你手敲截图命令时才需要管它。
 
 `?theme=light` / `?theme=dark` 切主题；不带参数 = 不写属性 = "跟随系统"，这也是一条需要单独验证的路径。
 
@@ -186,17 +198,32 @@ python tools/preview/build_preview.py
 
 预览台的 fixture 1 用的是你登录 AIMS 后抓下来的真实页面标记 —— 那是这类验证里最有价值的一份材料，因为它是唯一"未经我手改造"的真实结构。
 
-但它**不适合进公开仓库**：抓下来的页面里带着会话期标识。具体来说，AIMS 的会话保活脚本里有这样一段：
+但它**不适合进公开仓库**：抓下来的页面里带着会话期标识。具体来说，AIMS 的会话保活脚本里有这样一段（值已打码 —— 这里刻意不写出真实取值，原因见下）：
 
 ```
-twbktmlb_cityu.P_Release_Timeout?in_pd=1627904&in_tm=…&in_ran=222415025121659092630
+twbktmlb_cityu.P_Release_Timeout?in_pd=<会话 ID>&in_tm=<时间戳>&in_ran=<一次性随机值>
 ```
 
 `in_pd`、`in_ran` 都是属于个人会话的值。所以 `source code.html` 已被移出版本控制并写入 `.gitignore`。
 
+> 顺带记一笔教训：这份说明的初版里我把上面那几个真实取值原样写了出来当例子，
+> 结果在"移除它们"的那一次提交里又把它们发布了一遍。**说明"某个值不该公开"时，
+> 不要附带那个值本身** —— 用占位符。真实取值在 commit `02a9d4a` 的历史里依然
+> 可取（这是当初知情后选择保留的），但至少不该出现在当前 HEAD 的文档里。
+
 **要恢复 fixture 1**：自己登录 AIMS，把该页面的 HTML 另存为仓库根目录的 `source code.html`，再跑 `python tools/preview/build_preview.py`。缺这个文件时构建不会崩 —— 它会在 fixture 1 的位置放一个明确标注的占位块，并打印提示，其余四组样例照常生成。
 
-顺带确认过一件事：`preview.html` 里**不含**这些会话标识（`in_pd` / `in_ran` 命中数为 0）。因为构建时会把 fixture 1 的两个 `<script>` 整块剥掉，而那几个值正好都在会话保活脚本里。
+一份便于对照：**缺 capture 时生成出来的页面，与已提交的版本只差 fixture 1 那一节**，其余完全一致。如果你习惯用某个计数来体检（例如数 `div.body` 的个数），注意它会从 5 变成 4 —— 那不是回归，是 fixture 1 本来就没了。`--check` 已经知道这件事：capture 缺失时它会说明"只比较了 fixture 1 以外的部分"，而不是甩一个 STALE 给你；但只要别处真的漂了，它照样会报 STALE。
+
+顺带确认过两件事，都是实测的：
+
+1. `preview.html` 里**不含**这些会话标识（`in_pd` / `in_ran` 命中数为 0）。构建时会把 fixture 1 里**全部三个** `<script>` 块整块剥掉（会话保活一个 + Google 标签两个），而那几行值正好都在会话保活脚本里。
+2. 但**并非**所有抓取痕迹都被剥掉了：`preview.html` 里还留着 hidden form 中的采集时间戳（`event_time` 等，值是 `2026-09-30 18:17:xx`）。它们不是会话标识、灵敏度低得多，而且属于真实标记结构的一部分（剥掉就会破坏 fixture 的保真度），所以按你决定"保留 preview.html 的真实标记"一并留下了。写在这里是为了让口径准确：**移出的是会话标识，不是"所有抓取痕迹"。**
+
+> **一个操作提醒**：`source code.html` 现在是 gitignore 的未跟踪文件，所以 `git clean -fdx`
+> 会**把它删掉**（同样会删掉 `tools/preview/vendor/` 和 `out/`）。你的抓取件在公开
+> 历史 `02a9d4a` 里还能取回，但更省事的是日常清理时用 `git clean -fd`（不加 `-x`），
+> 那样只会清理未忽略的未跟踪文件。
 
 ### 重新生成图标
 

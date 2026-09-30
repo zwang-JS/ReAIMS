@@ -90,7 +90,8 @@ div.cityubar_tools a.submenulinktext2:active {
 
 div.cityubar_tools a.submenulinktext2:hover,
 div.cityubar_tools a.submenulinktext2:focus {
-  color: var(--reaims-brand) !important;
+  /* 用【前景】令牌而不是 brand —— 见下面 tab 那条的说明 */
+  color: var(--reaims-link-hover) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -298,7 +299,17 @@ div.cityubar_tools a.submenulinktext2:focus {
 
 .pageheaderlinks2 .taboff a:hover,
 .pageheaderlinks2 .taboff a:focus {
-  color: var(--reaims-brand) !important;
+  /* 必须用【前景】令牌（--reaims-link-hover），不能用 --reaims-brand。
+
+     这两个令牌是刻意分开的：brand 是"填充色"，为的是当按钮/选中标签的底，
+     保证白字压在上面可读；深色模式下它是 #C0337A —— 一块偏暗的品红，
+     拿来当【文字色】压在深色底上只有 3.06:1，13px 的字基本看不清。
+
+     实测（深色模式，标签悬停态）：
+       修复前 color: var(--reaims-brand)      -> 3.06:1  FAIL
+       修复后 color: var(--reaims-link-hover) -> 7.62:1  PASS
+     浅色模式下两者都是深品红，这一改只让对比度略微更好，不会回退。 */
+  color: var(--reaims-link-hover) !important;
   text-decoration: none !important;
 }
 

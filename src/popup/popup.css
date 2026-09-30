@@ -118,7 +118,12 @@ body {
 
 .seg button[aria-checked="true"] {
   background-color: var(--reaims-surface);
-  color: var(--reaims-brand);
+  /* 这里同样要用【前景】令牌，不能用 --reaims-brand。
+     选中项的文字压在 --reaims-surface 上，深色模式下 brand (#C0337A) 只有 3.32:1；
+     换成 link (#F06CA8) 是 6.17:1。
+     （这一处是全仓库扫描"把填充令牌当文字色用"时捞出来的 ——
+      它不在 hover 规则里，只查 :hover 会漏掉。） */
+  color: var(--reaims-link);
   font-weight: 600;
   box-shadow: var(--reaims-shadow-sm);
 }

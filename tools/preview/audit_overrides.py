@@ -60,6 +60,28 @@ OURS = {
     (0xFF, 0xB2, 0x7A), (0x2C, 0x2A, 0x34), (0x3A, 0x37, 0x43),
 }
 
+WARN_FIXTURE1_MISSING = (
+    "\n"
+    + "!" * 78 + "\n"
+    + "!!  COVERAGE REDUCED -- FIXTURE 1 WAS NOT AUDITED\n"
+    + "!!\n"
+    + "!!  ({why})\n"
+    + "!" * 78 + "\n"
+    "\n"
+    "  Fixture 1 is the real captured AIMS markup. Without it this run inspected\n"
+    "  markedly fewer elements than a full run, so the PASS above means only\n"
+    "  'nothing that WAS inspected is wrong' -- not 'everything was inspected'.\n"
+    "\n"
+    "  Not a failure: fixtures 2-5 still cover the data tables, forms and messages,\n"
+    "  which is where most of the class inventory lives. But a green result here is\n"
+    "  a smaller gate than the one you get with the capture present.\n"
+    "\n"
+    "  For full coverage: save the AIMS page's HTML to source code.html at the repo\n"
+    "  root, re-run build_preview.py, then re-run this audit.\n"
+    "\n"
+    + "!" * 78
+)
+
 CHROME_CANDIDATES = [
     os.environ.get("CHROME"),
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -109,49 +131,59 @@ def banner_literals(path: str) -> set[tuple[int, int, int]]:
 AUDIT_JS = """
 <script>
 (() => {
-  const DANGER = new Set([%s]);
-  function rgbOf(el, prop) {
-    const v = getComputedStyle(el).getPropertyValue(prop);
-    const m = v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
-    if (!m) return null;
-    if (m[4] !== undefined && parseFloat(m[4]) === 0) return null;
-    return m[1] + "," + m[2] + "," + m[3];
-  }
-  const offenses = [];
-  let inspected = 0, hidden = 0;
-  for (const el of document.querySelectorAll('[class]')) {
-    const cls = (el.getAttribute('class') || '').trim().split(/\\s+/);
-    if (!cls.length) continue;
-    const cs = getComputedStyle(el);
-    if (cs.display === 'none' || cs.visibility === 'hidden') { hidden++; continue; }
-    inspected++;
-    for (const prop of ['color', 'background-color']) {
-      const v = rgbOf(el, prop);
-      if (v && DANGER.has(v)) {
-        const anc = el.closest('.body,.cityu_noprint,.footer_outer,.pagetitlediv,.cityubar_outer');
-        offenses.push(prop + '=' + v + '  .' + cls.join('.') +
-                      '  <' + el.tagName.toLowerCase() + '>' +
-                      '  ctx=' + (anc ? '.' + anc.className.split(/\\s+/)[0] : '(none)'));
+  const lines = [];
+  try {
+    const DANGER = new Set([%s]);
+    function rgbOf(el, prop) {
+      const v = getComputedStyle(el).getPropertyValue(prop);
+      const m = v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+      if (!m) return null;
+      if (m[4] !== undefined && parseFloat(m[4]) === 0) return null;
+      return m[1] + "," + m[2] + "," + m[3];
+    }
+    const offenses = [];
+    let inspected = 0, hidden = 0;
+    for (const el of document.querySelectorAll('[class]')) {
+      const cls = (el.getAttribute('class') || '').trim().split(/\\s+/);
+      if (!cls.length) continue;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') { hidden++; continue; }
+      inspected++;
+      for (const prop of ['color', 'background-color']) {
+        const v = rgbOf(el, prop);
+        if (v && DANGER.has(v)) {
+          const anc = el.closest('.body,.cityu_noprint,.footer_outer,.pagetitlediv,.cityubar_outer');
+          offenses.push(prop + '=' + v + '  .' + cls.join('.') +
+                        '  <' + el.tagName.toLowerCase() + '>' +
+                        '  ctx=' + (anc ? '.' + anc.className.split(/\\s+/)[0] : '(none)'));
+        }
       }
     }
-  }
-  const lines = [
-    'audited (visible, classified) elements: ' + inspected + '   |   hidden skipped: ' + hidden,
-    'AIMS literals that are not one of our own values: ' + DANGER.size,
-    '',
-  ];
-  if (!offenses.length) {
-    lines.push('PASS - no element still computes to an AIMS literal colour in dark mode.');
-  } else {
-    const uniq = [...new Set(offenses)];
-    lines.push('FAIL - ' + uniq.length + ' distinct place(s) still computing to an AIMS literal:');
+    lines.push('audited (visible, classified) elements: ' + inspected +
+               '   |   hidden skipped: ' + hidden);
+    lines.push('AIMS literals that are not one of our own values: ' + DANGER.size);
     lines.push('');
-    for (const o of uniq) lines.push('  ' + o);
+    if (!offenses.length) {
+      lines.push('PASS - no element still computes to an AIMS literal colour in dark mode.');
+    } else {
+      const uniq = [...new Set(offenses)];
+      lines.push('FAIL - ' + uniq.length + ' distinct place(s) still computing to an AIMS literal:');
+      lines.push('');
+      for (const o of uniq) lines.push('  ' + o);
+    }
+  } catch (err) {
+    /* 审计自己崩掉时必须说出来。之前这里是裸的：脚本一抛异常就什么都不输出，
+       调用方只看到 "AUDIT DID NOT RUN"，无从判断是页面问题还是审计本身的问题 ——
+       一个会静默消失的检查比一个会失败的检查危险得多。 */
+    lines.unshift('AUDIT THREW: ' + ((err && err.message) ? err.message : String(err)));
+    lines.push('');
+    lines.push('The audit did NOT complete. Treat this as a FAILURE, not a pass.');
   }
   const pre = document.createElement('pre');
   pre.id = 'reaims-audit-out';
   pre.textContent = lines.join('\\n');
-  document.body.insertBefore(pre, document.body.firstChild);
+  const host = document.body || document.documentElement;
+  if (host) host.insertBefore(pre, host.firstChild);
 })();
 </script>
 """
@@ -178,18 +210,87 @@ def build_audit_page(danger: set[tuple[int, int, int]]) -> str:
 
 def run_audit(chrome: str, page: str) -> str:
     url = "file:///" + page.replace("\\", "/").lstrip("/") + "?theme=dark"
-    proc = subprocess.run(
-        [chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=5000",
-         "--dump-dom", url],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
-    )
+
+    # 必须给一个独立的 --user-data-dir。
+    #
+    # 不给的话 Chrome 会去用默认的 headless profile，而只要用户自己开着 Chrome
+    # （或者有另一个 headless 实例持有它），启动会直接失败：
+    #     ERROR:chrome_main.cc: Missing headless user data directory.
+    # 表现是 dump 为空，于是我们只能报一句"审计没跑起来" —— 排查起来会误以为是
+    # 页面内容的问题。这个工具的可靠性不该取决于用户的浏览器是否开着。
+    profile = tempfile.mkdtemp(prefix="reaims-audit-chrome-")
+    try:
+        proc = subprocess.run(
+            [chrome, "--headless=new", "--disable-gpu",
+             "--user-data-dir=" + profile,
+             "--virtual-time-budget=5000", "--dump-dom", url],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+        )
+    finally:
+        shutil.rmtree(profile, ignore_errors=True)
+
     m = re.search(r'<pre id="reaims-audit-out">(.*?)</pre>', proc.stdout, re.S)
     if not m:
-        return "AUDIT DID NOT RUN — could not find its output in the rendered DOM."
+        # 把真实原因带出来，不要只丢一句"没跑起来" —— 无法诊断的失败会被当成玄学。
+        stderr_lines = [ln for ln in (proc.stderr or "").splitlines() if ln.strip()]
+        return (
+            "AUDIT DID NOT RUN -- no output found in the rendered DOM.\n"
+            f"  chrome exit code : {proc.returncode}\n"
+            f"  dom bytes        : {len(proc.stdout)}\n"
+            f"  chrome stderr    : {stderr_lines[0] if stderr_lines else '(empty)'}"
+        )
     text = m.group(1)
     for a, b in (("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"')):
         text = text.replace(a, b)
     return text.strip()
+
+
+CAPTURE = os.path.join(REPO, "source code.html")
+
+#: 占位块的签名文字。第二个信号，用来兜住"仓库里没有抓取文件、但页面确实含真标记"
+#: 这种自相矛盾的情况。
+PLACEHOLDER_MARKERS = (
+    "this is a placeholder, not AIMS markup",
+    "Fixture 1 unavailable",
+)
+
+
+def fixture1_coverage(page_path: str) -> tuple[bool, str]:
+    """Report whether fixture 1's REAL captured markup was part of this run.
+
+    This exists because the audit's verdict is only as meaningful as its coverage.
+    With the capture absent the page carries a placeholder instead, and the run
+    silently inspects ~100 fewer elements while still printing PASS — a reduced
+    gate indistinguishable from a full one. Anything that shrinks coverage has to
+    say so out loud.
+
+    Detection keys on THE PAGE, not on whether the capture happens to exist on
+    disk right now. The page is what is being audited, so it is the ground truth:
+    checking the filesystem instead would raise a false alarm whenever the capture
+    is moved after the page was generated, and a check that cries wolf gets
+    ignored. The filesystem is consulted only to explain *why*.
+    """
+    try:
+        html = open(page_path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return True, "unknown (could not read the audit page)"
+
+    lowered = html.lower()
+    has_placeholder = any(m.lower() in lowered for m in PLACEHOLDER_MARKERS)
+    # 结构性信号：fixture 1 是唯一带 AIMS 外壳（.cityubar_outer）的样例。
+    # 用它比依赖占位块的措辞稳 —— 措辞会被改写、会被挪进样式表，而外壳是真实标记本身。
+    has_shell = "cityubar_outer" in lowered
+
+    if has_shell and not has_placeholder:
+        return True, "real captured markup included"
+
+    if has_placeholder:
+        why = "the page contains the fixture-1 placeholder"
+    elif not os.path.exists(CAPTURE):
+        why = "no AIMS page shell in the page, and source code.html is not in the repo"
+    else:
+        why = "no AIMS page shell found in the page (fixture 1 may have been dropped)"
+    return False, why
 
 
 def read_text_preserving_newlines(path: str) -> tuple[str, str]:
@@ -258,6 +359,18 @@ def main() -> int:
         page = build_audit_page(danger)
         result = run_audit(chrome, page)
         print(result)
+
+        # 覆盖面必须显式说出来。少了 fixture 1 时审计仍然会打印 PASS ——
+        # 那个 PASS 是诚实的（查过的确实都干净），但它不等于"全都查过了"。
+        # 一个静默缩水的检查和一个完整的检查长得一模一样，正是这里要避免的。
+        #
+        # 这段刻意只用 ASCII：诊断信息要在任何控制台编码下都能读出来
+        # （中文正文在非中文 Windows 的 cp1252 控制台上会变成 \uXXXX 转义）。
+        covered, why = fixture1_coverage(page)
+        if covered:
+            print("\ncoverage: fixture 1 (real captured markup) IS included -- full gate.")
+        else:
+            print(WARN_FIXTURE1_MISSING.format(why=why))
     finally:
         if original is not None:
             body, nl = original

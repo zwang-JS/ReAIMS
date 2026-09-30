@@ -15,7 +15,10 @@
       <path d="M7 9h10M7 12.5h10M7 16h6" />
     </svg>
     <h1>ReAIMS</h1>
-    <span class="ver">v1.0.0</span>
+    <!-- 版本号由 popup.js 从 chrome.runtime.getManifest() 读取后填入。
+         刻意【不】在这里写死 —— 写死就会在每次发版后悄悄说谎（manifest 已经是新版本，
+         弹窗还显示旧的），而这类不一致没有任何检查会报出来。 -->
+    <span class="ver" id="reaims-version"></span>
   </header>
 
   <section class="sec">

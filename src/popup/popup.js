@@ -15,8 +15,17 @@
 
   const segButtons = Array.from(document.querySelectorAll(".seg button"));
   const showToggleInput = document.getElementById("show-toggle");
+  const versionEl = document.getElementById("reaims-version");
 
   let theme = "system";
+
+  /* 版本号从 manifest 里读，不在 HTML 里写死。
+     写死的话每次发版后弹窗都会显示上一个版本，而这种不一致没有任何检查会报出来。
+     直接以 file:// 打开本页做视觉验证时 chrome.runtime 不存在 —— 那就留空，
+     宁可空着也不要显示一个可能已经过期的值。 */
+  if (versionEl && typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getManifest) {
+    versionEl.textContent = "v" + chrome.runtime.getManifest().version;
+  }
 
   /* 弹窗自己也要跟随主题。机制与页面完全一致：
      显式选择 -> 写属性；跟随系统 -> 不写属性，交给 prefers-color-scheme。 */

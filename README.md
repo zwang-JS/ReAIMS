@@ -18,7 +18,7 @@
 
 本扩展未上架 Chrome 应用商店，用开发者模式加载。**不需要 Git，也不需要构建。**
 
-1. 到 [Releases](https://github.com/zwang-JS/ReAIMS/releases/latest) 下载 `ReAIMS-v1.0.0.zip`
+1. 到 [Releases](https://github.com/zwang-JS/ReAIMS/releases/latest) 下载最新的 zip（文件名形如 `ReAIMS-vX.Y.Z.zip`）
 2. 打开 `chrome://extensions`
 3. 右上角打开 **开发者模式**
 4. **把下载的 zip 直接拖进这个页面**，确认安装

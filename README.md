@@ -41,7 +41,7 @@
 ## 开发与贡献
 
 样式是怎么分层的、预览台怎么用、几项检查各自负责什么，
-都移到了 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
+移步 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
 
 ## 已知限制
 

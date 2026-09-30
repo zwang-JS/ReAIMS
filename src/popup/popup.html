@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <title>ReAIMS</title>
+  <!-- 复用 AIMS 页面上那套设计令牌，保证扩展自己的 UI 与注入样式
+       出自同一个设计系统，而不是两套配色。 -->
+  <link rel="stylesheet" href="../styles/01-tokens.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="hd">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="18" rx="5" />
+      <path d="M7 9h10M7 12.5h10M7 16h6" />
+    </svg>
+    <h1>ReAIMS</h1>
+    <span class="ver">v1.0.0</span>
+  </header>
+
+  <section class="sec">
+    <h2 class="lbl" id="appearance-label">外观</h2>
+    <div class="seg" role="radiogroup" aria-labelledby="appearance-label">
+      <button type="button" role="radio" data-theme="light" aria-checked="false">浅色</button>
+      <button type="button" role="radio" data-theme="dark" aria-checked="false">深色</button>
+      <button type="button" role="radio" data-theme="system" aria-checked="false">跟随系统</button>
+    </div>
+  </section>
+
+  <section class="sec">
+    <label class="row">
+      <input type="checkbox" id="show-toggle">
+      <span>在页面上显示悬浮切换按钮</span>
+    </label>
+  </section>
+
+  <footer class="ft">
+    <span>快速切换</span>
+    <span class="keys"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>D</kbd></span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

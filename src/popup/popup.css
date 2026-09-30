@@ -1,0 +1,187 @@
+/* ==========================================================================
+   ReAIMS — popup.css
+   扩展弹窗自身的样式。280px 宽，安静克制 ——
+   视觉上的"着力点"留给 AIMS 页面里的数据表，这里不抢戏。
+
+   本文件在 01-tokens.css 之后加载，所以同为 !important 时由这里胜出；
+   下面覆盖 body 的两条规则就是为了抵掉 tokens 里给"裸弹窗页"（pics.htm
+   那类无外壳页面）准备的阅读版心 —— 那个版心不该套在扩展弹窗上。
+   ========================================================================== */
+
+body {
+  width: 280px;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: var(--reaims-surface) !important;
+  color: var(--reaims-ink) !important;
+  font-family: var(--reaims-font) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* --------------------------------------------------------------------------
+   头部
+   -------------------------------------------------------------------------- */
+
+.hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--reaims-line);
+}
+
+.mark {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: var(--reaims-brand);
+}
+
+.mark path {
+  stroke: #ffffff;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.hd h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  color: var(--reaims-ink);
+}
+
+.ver {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--reaims-ink-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   区块
+   -------------------------------------------------------------------------- */
+
+.sec {
+  padding: 14px 16px;
+}
+
+.sec + .sec {
+  padding-top: 0;
+}
+
+.lbl {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--reaims-ink-muted);
+}
+
+/* --------------------------------------------------------------------------
+   三选一分段控件
+   -------------------------------------------------------------------------- */
+
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  background-color: var(--reaims-surface-3);
+  border-radius: var(--reaims-r);
+}
+
+.seg button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 7px 0;
+  border: 0;
+  border-radius: var(--reaims-r-sm);
+  background: transparent;
+  color: var(--reaims-ink-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color var(--reaims-dur) var(--reaims-ease),
+    color var(--reaims-dur) var(--reaims-ease);
+}
+
+.seg button:hover {
+  color: var(--reaims-ink);
+}
+
+.seg button[aria-checked="true"] {
+  background-color: var(--reaims-surface);
+  color: var(--reaims-brand);
+  font-weight: 600;
+  box-shadow: var(--reaims-shadow-sm);
+}
+
+.seg button:focus-visible {
+  outline: 2px solid var(--reaims-brand);
+  outline-offset: -2px;
+}
+
+/* --------------------------------------------------------------------------
+   开关行
+   -------------------------------------------------------------------------- */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  color: var(--reaims-ink);
+  font-size: 13px;
+}
+
+.row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--reaims-brand);
+  cursor: pointer;
+}
+
+.row input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--reaims-brand);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   底部
+   -------------------------------------------------------------------------- */
+
+.ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--reaims-line);
+  color: var(--reaims-ink-subtle);
+  font-size: 11px;
+}
+
+.keys {
+  display: flex;
+  gap: 3px;
+}
+
+kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--reaims-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background-color: var(--reaims-surface-2);
+  color: var(--reaims-ink-muted);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.5;
+}

@@ -1,0 +1,30 @@
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 打包产物（发布到 Chrome 应用商店时本地生成，不入库）
+*.zip
+*.crx
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+
+# 本仓库没有构建步骤、零 npm 依赖，保留这条只是以防万一
+node_modules/
+
+# 预览台的截图输出
+tools/preview/out/
+
+# 预览台需要的第三方资源（AIMS 的真实样式表、CityU/Apple/Google 的品牌图）。
+# 这些东西不属于本项目，本仓库又是公开的，所以不随仓库分发 ——
+# 用 tools/preview/fetch_vendor.py 按需从公开地址下载。
+tools/preview/vendor/

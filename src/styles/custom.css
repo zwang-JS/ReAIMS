@@ -1,0 +1,189 @@
+/* ==========================================================================
+   ReAIMS — custom.css
+   最终强制覆盖层（层叠顺序排在最后）。
+
+   这一层做什么
+   ------------
+   1. 收口收不掉的部分：Banner 具体选择器上的残留硬编码色值
+      （悬停胶囊、站点地图、回到顶部一类零散规则）。
+   2. 打印样式。
+
+   为什么排最后就能"说了算"
+   -----------------------
+   同为 !important 时，按源顺序后来者胜 —— 而 manifest.json 里
+   content_scripts[].css 的数组顺序就是层叠顺序，本文件在数组末位。
+   所以本文件里凡是与前面文件冲突的声明，一定赢。
+
+   因此本文件里的每一条也都带 !important（否则它会输给前面那些带 !important
+   的规则，反而成了最弱的一层，这正是最容易踩的坑）。
+
+   深色模式的颜色基本不用在这里补救：颜色全部挂在 color-scheme 上
+   （见 01-tokens.css），light-dark() 会自动解析，
+   所以这里只需要处理"颜色以外"的遗留问题。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   残留的硬编码色值
+   -------------------------------------------------------------------------- */
+
+/* Banner 给菜单类链接做了一个深蓝底的悬停胶囊：
+     A.submenulinktext:hover { background-color: #1E2B83; color: #FFFFFF }
+   深色模式下那会变成一块突兀的深蓝空洞。换成品牌浅底。
+   注意 :visited:hover 是 Banner 单独写的一条声明，必须一并覆盖。 */
+a.submenulinktext:hover,
+a.submenulinktext:focus,
+a.submenulinktext:visited:hover {
+  background-color: var(--reaims-brand-soft) !important;
+  color: var(--reaims-link-hover) !important;
+}
+
+/* 站点地图的三级链接：Banner 分别用了 #1E2B83 / #0000ff / #660099 ...
+   顺带把 80% / 70% / 60% 的小字号提上来 —— 60% 只有 9px 左右。 */
+a.sitemaplevel1,
+a.sitemaplevel1:link,
+a.sitemaplevel1:visited,
+a.sitemaplevel2,
+a.sitemaplevel2:link,
+a.sitemaplevel2:visited,
+a.sitemaplevel3,
+a.sitemaplevel3:link,
+a.sitemaplevel3:visited {
+  color: var(--reaims-link) !important;
+  text-align: left !important;
+}
+
+a.sitemaplevel1:hover,
+a.sitemaplevel1:focus,
+a.sitemaplevel2:hover,
+a.sitemaplevel2:focus,
+a.sitemaplevel3:hover,
+a.sitemaplevel3:focus {
+  color: var(--reaims-link-hover) !important;
+}
+
+a.sitemaplevel1 { font-size: var(--reaims-fs) !important; font-weight: 600 !important; }
+a.sitemaplevel2 { font-size: var(--reaims-fs-sm) !important; font-weight: 500 !important; }
+a.sitemaplevel3 { font-size: var(--reaims-fs-sm) !important; }
+
+/* A.whitespacelink { color: #1E2B83; line-height: 200% } */
+a.whitespacelink,
+a.whitespacelink:link,
+a.whitespacelink:visited {
+  color: var(--reaims-link) !important;
+  line-height: 1.7 !important;
+}
+
+/* DIV.backlinkdiv { text-align: right; margin-top: -40px }
+   那个 -40px 是用来抵消旧版标题块行高的，现在标题块的行高已经改了，
+   负偏移会让"返回"链接叠到内容上。 */
+div.backlinkdiv {
+  text-align: right !important;
+  margin-top: var(--reaims-sp-3) !important;
+}
+
+a.backlinktext,
+.backlinktext {
+  color: var(--reaims-ink-muted) !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+/* .skiplinks 在 Banner 里是 display: none（"Skip Module Navigation Links"、
+   "Skip to top of page" 这些跳转锚点其实一直是隐藏的）。
+   这是 Banner 自身的行为，本扩展刻意不改动 —— 把它改成"聚焦时出现"
+   属于行为变更，不在这次"只改外观"的范围内。 */
+
+/* --------------------------------------------------------------------------
+   打印
+   -------------------------------------------------------------------------- */
+
+/* @page 只能放在顶层，不能嵌在 @media 里 */
+@page {
+  margin: 14mm;
+}
+
+@media print {
+  /* 主题色的处理只需要一行 —— 在 01-tokens.css 里把 color-scheme 强制回 light，
+     light-dark() 就会把全部颜色解析成浅色那一侧。
+     这一步不能省：@media print 下 prefers-color-scheme 依然会判定为深色，
+     否则深色模式用户打印出来的就是整页黑底。 */
+
+  /* 打印时清掉所有交互性/导航性外壳 */
+  .cityubar_outer,
+  .header_outer,
+  .cityu_noprint,
+  .footer_outer,
+  .poweredbydiv,
+  #reaims-theme-toggle {
+    display: none !important;
+  }
+
+  /* 表纸在纸上不需要阴影和圆角，恢复成朴素的网格表 */
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: 1px solid #999999 !important;
+    background: #ffffff !important;
+  }
+
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th) {
+    border-top: 1px solid #cccccc !important;
+    /* 表头改成浅灰底 + 深字，黑白打印机也能看出层次 */
+    background-color: #f0f0f0 !important;
+    color: #000000 !important;
+  }
+
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :is(td, th) {
+    background-color: #e4e4e4 !important;
+  }
+
+  /* 圆角单元格在打印时也要归零，否则会留下缺口 */
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :first-child,
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :last-child,
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :first-child,
+  div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :last-child {
+    border-radius: 0 !important;
+  }
+
+  /* 表头吸顶在纸上没有意义，反而可能重复绘制 */
+  div.body table :is(td, th):is(.ddheader, .dbheader) {
+    position: static !important;
+  }
+
+  /* 一行数据不要被分页切开 */
+  tr {
+    break-inside: avoid;
+  }
+
+  /* Banner 自己那 4 段 @media print 会把按钮刷成 #cccccc 灰底。
+     因为我们的规则带 !important，会盖过它们，所以这里要主动把按钮
+     改回省墨的样子，否则会打印出整块实心品红。 */
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  button,
+  input.search_button,
+  input.cityu_button_100 {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    border: 1px solid #888888 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* 吸顶在纸上没有意义 */
+  .cityubar_outer,
+  .cityu_noprint {
+    position: static !important;
+  }
+
+  /* 链接在纸上不需要品牌色，用深色更清晰（也避免打印机把浅品红打成灰） */
+  a:link,
+  a:visited {
+    color: #000000 !important;
+  }
+
+  /* 不要在链接后面追加 href —— AIMS 页面链接极密，加了会彻底糊掉。
+     这是很多"打印优化"的默认做法，但在这里是错的。 */
+}

@@ -1,0 +1,259 @@
+/* ==========================================================================
+   ReAIMS — 02-base.css
+   全局基础层：页面底色、排版、链接、焦点、表单控件外观的"语义"部分、
+   以及无外壳的裸弹窗页面。
+
+   本文件拥有的属性（其它文件不要再设置，避免同特异性 !important 打架）：
+     html/body 底色与排版、font 标签归一化、h1-h6 字体、a 的四个伪类、
+     :focus-visible、::selection、::placeholder、-webkit-autofill、
+     hr、ul/ol/li
+
+   两条来自实测的硬约束，务必不要违反：
+     1. 【不要】给裸 td / th 设 padding。Banner 的 .whitespace1-4 是
+        padding-top: 0/1/2/3em 的纵向占位符，而"重要性"高于"特异性"——
+        一条 td { padding: 12px !important } 会把页面上所有纵向留白压成 12px。
+        单元格内边距一律按角色在 04-tables.css 里设。
+     2. 【不要】给裸 td / th 设 text-align / width / height。Banner 大量依赖
+        align="right"、width="3%"、height="22" 这类表现属性，而 !important 会
+        压过它们，导致右对齐的数字列全部跑到左边、星号列宽布局塌掉。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   html / body
+   Banner 在 4 个规则里重复写了 background-color:#FFFFFF（BODY 以及
+   BODY.campuspipeline / .previewbody / .validationbody）。它们特异性更高，
+   但因为我们的 !important 无条件胜出，这里一条规则即可全部覆盖。
+   -------------------------------------------------------------------------- */
+
+html {
+  background-color: var(--reaims-bg) !important;
+  /* 锚点跳转时给吸顶栏留出空间，否则跳转后标题被压在导航下面 */
+  scroll-padding-top: calc(var(--reaims-sticky-h) + var(--reaims-sp-4));
+}
+
+body {
+  background-color: var(--reaims-bg) !important;
+  color: var(--reaims-ink) !important;
+  font-family: var(--reaims-font) !important;
+  font-size: var(--reaims-fs) !important;
+  line-height: var(--reaims-lh) !important;
+  /* Banner 有 body { margin-left:1%; margin-right:2% }，被后面的
+     body,img { margin:0 } 覆盖，所以实际是 0。这里显式归零，
+     版心交给 03-chrome.css 的内容容器去管。 */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 无 AIMS 外壳的裸弹窗页（/cityu/pics.htm、/genhelp/hwgholgi.htm 等）。
+   这些页面完全没有样式表，配色全靠 <body bgcolor text link vlink alink>
+   表现属性写死。表现属性优先级低于任何作者 CSS，所以下面这些规则能生效；
+   但它们没有 .pagetitlediv / div.body 可挂版心，需要单独给一个阅读版心。 */
+body:not(:has(.cityubar_outer)) {
+  max-width: 72ch;
+  margin: 0 auto !important;
+  padding: var(--reaims-sp-6) var(--reaims-sp-5) !important;
+}
+
+/* --------------------------------------------------------------------------
+   <font> 标签归一化
+   AIMS 里到处都是 <font color=... size=...>。其中 .cityu_noprint 里
+   有一段 <font color="#ffffff">AIMS (Version 8.33)</font> 是白字，
+   在浅色底上根本看不见 —— color: inherit 顺手把这个老问题修掉。
+
+   注意这里【不】写 font-size: inherit：<font size="-1"> 在菜单里承担
+   "次要说明文字"的层级信号，全盘抹平会丢掉这个层次。改为按 size 显式映射。
+   -------------------------------------------------------------------------- */
+
+font {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+}
+
+font[size="-2"] { font-size: var(--reaims-fs-xs) !important; }
+font[size="-1"] { font-size: var(--reaims-fs-sm) !important; }
+font[size="1"]  { font-size: var(--reaims-fs) !important; }
+font[size="2"]  { font-size: var(--reaims-fs-lg) !important; }
+font[size="3"]  { font-size: var(--reaims-fs-h3) !important; }
+font[size="4"],
+font[size="5"],
+font[size="6"]  { font-size: var(--reaims-fs-h2) !important; }
+
+/* --------------------------------------------------------------------------
+   标题
+   单一字体家族，层级靠字重/字号/字距。顺带干掉 Banner 在
+   div.pagetitlediv h2 与 h1 上用的 "Times New Roman"。
+
+   【故意不给 h1 设字号】：Banner 的 H1 { font-size: 0% } 是有意把它收起来
+   （源码注释写着 "H1 is reserved for Page Header"），全局强制字号会让它在
+   本来该隐藏的地方冒出来。裸页面（无样式表）上 h1 走 UA 默认值，本就正常。
+   -------------------------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--reaims-font) !important;
+  color: var(--reaims-ink) !important;
+  line-height: var(--reaims-lh-tight) !important;
+  letter-spacing: var(--reaims-tracking-tight) !important;
+  font-weight: 600 !important;
+}
+
+h2 { font-size: var(--reaims-fs-h2) !important; margin: var(--reaims-sp-5) 0 var(--reaims-sp-3) !important; }
+h3 { font-size: var(--reaims-fs-h3) !important; margin: var(--reaims-sp-4) 0 var(--reaims-sp-2) !important; }
+h4 { font-size: var(--reaims-fs-h4) !important; margin: var(--reaims-sp-3) 0 var(--reaims-sp-2) !important; }
+h5, h6 { font-size: var(--reaims-fs-sm) !important; margin: var(--reaims-sp-3) 0 var(--reaims-sp-2) !important; }
+
+/* 地雷：Banner 的 div.header_inner h1 是 display:inline + position:relative +
+   top:-137px，靠负偏移把白色 40px 标题顶进头部色带里。任何对它的
+   position/font-size 改动都会导致标题错位。这里显式还原 Banner 的取值，
+   等于把它列入"不碰"名单。 */
+div.header_inner h1 {
+  font-family: "Trebuchet MS", sans-serif !important;
+  color: #ffffff !important;
+  font-weight: normal !important;
+  letter-spacing: normal !important;
+  line-height: 1em !important;
+}
+
+/* --------------------------------------------------------------------------
+   链接
+   Banner: A:link/#007ac4、A:hover/#990000、A:visited/#660099。
+   裸弹窗页则靠 <body link/vlink/alink> 表现属性。四条伪类都要显式设置，
+   否则那些页面会保留写死的链接色。
+
+   注意：AIMS 的标签条锚点是【没有 class】的（<a href>个人资料</a>），
+   所以这条全局规则会命中它们。标签条的颜色在 03-chrome.css 里用
+   span.pageheaderlinks2 祖先选择器 + 覆盖全部四个伪类来重新夺回。
+   -------------------------------------------------------------------------- */
+
+a:link { color: var(--reaims-link) !important; }
+a:visited { color: var(--reaims-link-visited) !important; }
+a:hover,
+a:focus { color: var(--reaims-link-hover) !important; }
+a:active { color: var(--reaims-link-hover) !important; }
+
+/* 默认不画下划线、悬停才画 —— 视觉更安静。
+   代价是链接与正文的区别只剩颜色，所以正文里的链接在 06-messages.css
+   会额外加回下划线，保证不靠颜色也能分辨。 */
+a {
+  text-decoration: none !important;
+  text-underline-offset: 0.18em !important;
+  transition: color var(--reaims-dur) var(--reaims-ease),
+              background-color var(--reaims-dur) var(--reaims-ease);
+}
+
+a:hover,
+a:focus {
+  text-decoration: underline !important;
+}
+
+/* --------------------------------------------------------------------------
+   焦点可见性
+   Banner 在 body/img 和 input.search_textbox 上都写了 outline: 0，
+   键盘用户（AIMS 有 accesskey 2/3/H）会完全失去焦点指示。这里恢复。
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--reaims-brand) !important;
+  outline-offset: 2px !important;
+}
+
+/* --------------------------------------------------------------------------
+   选中态 / 占位符 / 自动填充
+   自动填充那条很关键：Chrome 会用一层浅蓝/白底盖住字段，深色模式下非常刺眼。
+   -------------------------------------------------------------------------- */
+
+::selection {
+  background: var(--reaims-brand-soft);
+  color: var(--reaims-ink);
+}
+
+::placeholder {
+  color: var(--reaims-ink-subtle) !important;
+  opacity: 1 !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--reaims-field) inset !important;
+  -webkit-text-fill-color: var(--reaims-ink) !important;
+}
+
+/* --------------------------------------------------------------------------
+   分隔线 / 列表
+   Banner: HR { color:#CCCC33 } 且 hr 四边分别画了白/灰线（深色下是白线炸眼）；
+           li { margin-left: 3em } 缩进过大。
+   -------------------------------------------------------------------------- */
+
+hr {
+  border: 0 !important;
+  border-top: 1px solid var(--reaims-line) !important;
+  height: 0 !important;
+  margin: var(--reaims-sp-4) 0 !important;
+  padding: 0 !important;
+  color: var(--reaims-line) !important;
+}
+
+hr.pageseprator {
+  border-top: 1px solid var(--reaims-line-strong) !important;
+  margin: var(--reaims-sp-5) 0 !important;
+}
+
+ul, ol {
+  margin: var(--reaims-sp-3) 0 !important;
+  padding-left: 1.35em !important;
+}
+
+li {
+  margin-left: 0 !important;
+  margin-bottom: var(--reaims-sp-1) !important;
+  line-height: var(--reaims-lh) !important;
+}
+
+li:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   段落
+   Banner 只清了 p p 的边距，普通 p 走 UA 默认的 1em，在密排布局里偏大。
+   -------------------------------------------------------------------------- */
+
+p {
+  line-height: var(--reaims-lh) !important;
+}
+
+/* 注意：这里【故意不写】p:empty { display: none }。
+   Banner 把空 <p> 当作纵向留白使用（例如 div.infotextdiv 里成对的
+   <p></p>），删掉它们会改变页面节奏。空元素清理由内容层各文件自己判断。 */
+
+/* --------------------------------------------------------------------------
+   文字工具类的 color: black 归一化
+   Banner 在约 30 个文字工具类上写死了 color: black。深色模式下这些黑字会
+   整片消失，而它们分散在各处、没有统一的祖先可以挂规则。
+
+   做法：在本文件（最早的一层）把它们统一改成继承，等于"跟随上下文颜色"。
+   需要语义色的那几个（.errortext / .warningtext / .infotext / .field* /
+   .captiontext 等）由 05、06 两个文件重新赋值 —— 它们在层叠上更靠后，
+   同为 !important 时后者胜出，所以这里不必逐个甄别。
+   -------------------------------------------------------------------------- */
+
+.pageheaderlinks, .pagebodylinks, .gotoanchorlinks, .pagefooterlinks,
+.backlinktext, .menuheadertext, .menulinkdesctext, .normaltext, .menulinktext,
+.headerlinksdiv2, .plheadermenulinks, .fieldsmalltext, .fieldsmallboldtext,
+.fieldmediumtext, .fieldmediumtextbold, .fieldlargetext, .infotext,
+.captiontext, .errortext, .warningtext, .fielderrortext, .requirementnotmet,
+.multipagemsgtext, .releasetext, .requiredmsgtext, .fieldlabeltext,
+.fieldrequiredtext, .fieldformattext, .fieldformatboldtext, .fieldOrangetextbold {
+  color: inherit !important;
+}
+
+/* 表格单元格：Banner 的 `TABLE TH, TABLE TD { color: black }` 是全局生效的
+   （特异性 0,0,2），会覆盖掉继承，让大量没有专门规则的格子变成黑字。
+   这里统一设成正文色；04-tables.css 里那些按角色写的颜色规则排在后面，
+   同特异性同重要性时后者胜出，所以表头等仍然能保留各自的处理。 */
+th, td {
+  color: var(--reaims-ink) !important;
+}

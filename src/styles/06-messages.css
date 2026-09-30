@@ -1,0 +1,187 @@
+/* ==========================================================================
+   ReAIMS — 06-messages.css
+   提示 / 警告 / 错误 / 说明性区块。
+
+   本文件拥有的属性：.infotextdiv / .infotexttable / .indefault / .infotext /
+   .errortext / .warningtext / .fielderrortext / .requirementnotmet /
+   .hwgksphb_* 的底色、边框与文字色。
+
+   实测发现：Banner 把 .errortext 和 .warningtext 都写成
+   `color: black; font-weight: bold` —— 错误提示根本不是红的，
+   只靠加粗来区分。深色模式下黑字直接消失。这里把它们改成真正的语义色。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   说明区块
+   实际结构（登录页 / catalog 页实测）：
+     div.infotextdiv
+       └ table.infotexttable
+           ├ td.indefault > img.headerImg   ← web_info_cascade.png 信息图标
+           └ td.indefault > span.infotext   ← 正文
+   做成一则左边有强调条的浅色提示条。
+   -------------------------------------------------------------------------- */
+
+div.infotextdiv table.infotexttable {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  background-color: var(--reaims-info-bg) !important;
+  border: 1px solid var(--reaims-info-line) !important;
+  /* 左侧强调条：结构信息用边框表达，不额外加装饰元素 */
+  border-left: 3px solid var(--reaims-info) !important;
+  border-radius: var(--reaims-r) !important;
+  margin: var(--reaims-sp-3) 0 var(--reaims-sp-5) !important;
+}
+
+div.infotextdiv table.infotexttable td.indefault {
+  padding: 13px 16px !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  /* Banner 的 TABLE TD { vertical-align: top } 会让图标浮在文字上方 */
+  vertical-align: middle !important;
+}
+
+/* 图标格：宽度收到最小，右边不要内边距，好让图标贴着文字 */
+div.infotextdiv table.infotexttable td.indefault:has(> img.headerImg) {
+  width: 1% !important;
+  padding: 13px 0 13px 16px !important;
+  white-space: nowrap;
+}
+
+div.infotextdiv table.infotexttable td.indefault:has(> img.headerImg) + td.indefault {
+  padding-left: 10px !important;
+}
+
+span.infotext {
+  color: var(--reaims-ink) !important;
+  font-size: var(--reaims-fs-sm) !important;
+  font-family: var(--reaims-font) !important;
+  line-height: var(--reaims-lh) !important;
+  text-align: left !important;
+}
+
+/* 提示条里的加粗文字（例如 "To protect your privacy, please Exit…"）
+   提成正常字重会更安静，但那是 Banner 有意的强调，保留加粗、只调字重等级。 */
+div.infotextdiv span.infotext b,
+div.infotextdiv span.infotext strong {
+  font-weight: 600 !important;
+}
+
+/* --------------------------------------------------------------------------
+   错误 / 警告
+   Banner 里这三者都只是 color: black + bold，没有红色。
+   -------------------------------------------------------------------------- */
+
+.errortext {
+  color: var(--reaims-danger) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs) !important;
+  font-family: var(--reaims-font) !important;
+}
+
+.warningtext {
+  color: var(--reaims-warning) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs) !important;
+  font-family: var(--reaims-font) !important;
+}
+
+.fielderrortext {
+  color: var(--reaims-danger) !important;
+  font-weight: 500 !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+.requirementnotmet {
+  color: var(--reaims-danger) !important;
+  font-weight: 600 !important;
+}
+
+/* 错误/警告常常直接摆在 div.body 里、没有外层容器，
+   这两条让它们周围的 <b> 也跟着走语义色，避免红字里混一段黑体。 */
+div.body p:has(> b:only-child) .errortext,
+div.body b + .errortext {
+  color: var(--reaims-danger) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Banner 自带的黄色隐私提示框
+   Banner: table.hwgksphb_privacy { border: 1px solid #ffcc00;
+           background-color: #ffeeaa; border-radius: 10px;
+           box-shadow: 0 1px 3px rgba(0,0,0,.5) }
+   浅黄底 + 浅色文字在深色模式下完全不可读，换成警告色令牌重画。
+   -------------------------------------------------------------------------- */
+
+table.hwgksphb_privacy {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background-color: var(--reaims-warning-bg) !important;
+  border: 1px solid var(--reaims-warning-line) !important;
+  border-left: 3px solid var(--reaims-warning) !important;
+  border-radius: var(--reaims-r) !important;
+  box-shadow: var(--reaims-shadow-sm) !important;
+  margin: var(--reaims-sp-4) 0 !important;
+}
+
+table.hwgksphb_privacy td {
+  padding: 14px 16px !important;
+  color: var(--reaims-ink) !important;
+  font-size: var(--reaims-fs-sm) !important;
+  vertical-align: middle !important;
+}
+
+table.hwgksphb_privacy font {
+  color: inherit !important;
+}
+
+/* --------------------------------------------------------------------------
+   帮助页（弹窗里）
+   -------------------------------------------------------------------------- */
+
+table.hwgksphb_help h3,
+table.hwgksphb_help h5 {
+  color: var(--reaims-ink) !important;
+  font-family: var(--reaims-font) !important;
+  border: 0 !important;
+  margin: var(--reaims-sp-3) 0 var(--reaims-sp-2) !important;
+  padding: 0 !important;
+}
+
+table.hwgksphb_help h5 {
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+table.hwgksphb_help ol {
+  font-size: var(--reaims-fs-sm) !important;
+  margin-left: 0 !important;
+  padding-left: 1.4em !important;
+}
+
+div.hwgksphb_links {
+  position: static !important;
+  top: auto !important;
+  font-size: var(--reaims-fs-xs) !important;
+  color: var(--reaims-ink-muted) !important;
+  line-height: var(--reaims-lh) !important;
+}
+
+/* --------------------------------------------------------------------------
+   正文里的链接加回下划线
+   02-base.css 全局去掉了链接下划线（更安静），代价是链接与正文只剩颜色区别。
+   在正文段落里加回来，保证不靠颜色也能分辨 —— 这是无障碍要求，不是装饰。
+   -------------------------------------------------------------------------- */
+
+div.body p a,
+div.body li a,
+div.infotextdiv a,
+.errortext a,
+.warningtext a,
+.infolinks a {
+  text-decoration: underline !important;
+}
+
+/* 无外壳的裸弹窗页（pics.htm 一类）整页都是正文，同样加回下划线。
+   那些页面靠 <body link/vlink/alink> 表现属性上色，也一并由 02-base.css 接管。 */
+body:not(:has(.cityubar_outer)) a {
+  text-decoration: underline !important;
+}

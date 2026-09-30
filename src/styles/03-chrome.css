@@ -1,0 +1,458 @@
+/* ==========================================================================
+   ReAIMS — 03-chrome.css
+   页面外壳：版心、身份条、品牌带、吸顶导航（标签条）、页头、页脚。
+
+   本文件拥有的属性：.cityubar_* / .header_outer / .cityu_noprint /
+   span.pageheaderlinks2 及其标签、.pagetitlediv / td.bg3 / div.body /
+   .footer_* 的底色、边框、内边距与尺寸。
+
+   吸顶策略：只给两层 —— 身份条(40px) + 导航(52px)。品牌图带滚动即走。
+   三层全吸顶会吃掉近 172px 视口，在笔记本上不可接受。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   版心
+   Banner 的 body 只有 1%~2% 边距，宽屏上表格行会被拉到极长、很难读。
+   这里把内容收进一个 1180px 的居中列；两侧留白由 --reaims-pad-x 兜底，
+   所以窄屏时不会贴边。
+   -------------------------------------------------------------------------- */
+
+.pagetitlediv,
+div.body,
+.footer_outer {
+  max-width: var(--reaims-maxw);
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--reaims-pad-x) !important;
+  padding-right: var(--reaims-pad-x) !important;
+}
+
+/* --------------------------------------------------------------------------
+   第一层：CityU 身份条（吸顶 40px）
+   原本是两个浮动 div（左 logo、右工具链接）撑出来的。改成 flex 之后，
+   子元素上的行内 style="float:left/right" 会自动失效 —— flex 项忽略 float，
+   所以不需要去覆盖那些行内样式。
+   -------------------------------------------------------------------------- */
+
+.cityubar_outer {
+  /* 【不吸顶】。六个标签加搜索框在 1180px 里放不下一行，
+     吸顶栏只能做成两行（约 88px）。再把身份条也吸上就是 128px，
+     在笔记本上会吃掉太多视口。所以身份条随页面滚走，
+     吸顶只留给真正在浏览时要用的导航与搜索。 */
+  position: static;
+  background-color: var(--reaims-surface) !important;
+  border-bottom: 1px solid var(--reaims-line);
+}
+
+.cityubar_inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--reaims-sp-4);
+  min-height: var(--reaims-topbar-h);
+  max-width: var(--reaims-maxw);
+  margin: 0 auto;
+  padding: 0 var(--reaims-pad-x) !important;
+  font-size: var(--reaims-fs-sm) !important;
+  font-weight: 400 !important;
+}
+
+.cityubar_inner img {
+  height: 28px !important;
+  width: auto !important;
+  display: block;
+}
+
+/* 工具链接（How to Navigate / Site Map / Help / Exit）。
+   Banner 给的是 10px + #006797，在深色模式下只有约 2.5:1 对比度。 */
+.cityubar_tools {
+  font-size: var(--reaims-fs-sm) !important;
+  font-weight: 400 !important;
+  /* 让分隔用的 "|" 文本节点变灰，链接本身仍走全局链接色 */
+  color: var(--reaims-ink-subtle) !important;
+  white-space: nowrap;
+}
+
+.cityubar_tools a {
+  line-height: normal !important;
+  margin: 0 var(--reaims-sp-1);
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+/* Banner 单独给这里的链接写了 #006797 / hover #990000，需要显式夺回 */
+div.cityubar_tools a.submenulinktext2,
+div.cityubar_tools a.submenulinktext2:link,
+div.cityubar_tools a.submenulinktext2:visited,
+div.cityubar_tools a.submenulinktext2:active {
+  color: var(--reaims-ink-muted) !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+div.cityubar_tools a.submenulinktext2:hover,
+div.cityubar_tools a.submenulinktext2:focus {
+  color: var(--reaims-brand) !important;
+}
+
+/* --------------------------------------------------------------------------
+   第二层：品牌带（不吸顶）
+   原始素材是 900x80 的粉色低多边形图：左半是粉色几何块 + 白色 AIMS 字标，
+   右半是一整片近乎纯白的 #F1F1F2（Banner 因此把容器底色设成 #F1F1F1）。
+   这正好给了我们一个干净的做法 —— 把右半用 mask 渐隐掉，露出下面的品红底，
+   粉色几何体自然过渡进品牌色，不需要新画任何图形，也保住了原字标。
+
+   高度从 80px 收到 64px（等比缩放，不裁切、不变形）。
+   -------------------------------------------------------------------------- */
+
+.header_outer {
+  position: relative;
+  height: 64px !important;
+  background-color: var(--reaims-brand-band) !important;
+  background-image: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.header_outer img {
+  display: block !important;
+  height: 64px !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* 压暗并略微提饱和：#B75172 一类的深粉能把白色字标顶到约 6.6:1，
+     而原图偏亮的粉只有约 3.6:1。 */
+  filter: brightness(0.85) saturate(1.06);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 46%, transparent 80%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 46%, transparent 80%);
+}
+
+/* 深色模式下压暗这张栅格图。罩层用颜色令牌实现，见 01-tokens.css 的说明。 */
+.header_outer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--reaims-band-scrim);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   第三层：吸顶导航（标签条）
+   .cityu_noprint 里其实有两行东西：一行是"Find a Page"搜索表单，
+   一行是标签条。两行都吸顶会太高，所以把它变成 flex，让搜索靠右、
+   标签靠左，压成一行。
+
+   :has(.tabon) 守卫很关键 —— 登录页的 .cityu_noprint 里【没有】标签条
+   （只有一个居中的版本号），那种情况下不该出现一条空的吸顶栏。
+   -------------------------------------------------------------------------- */
+
+.cityu_noprint:has(.tabon, .taboff) {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  /* 允许换行 —— 这是刻意的，而且它就是这里唯一稳定的做法。
+
+     六个标签（其中 "Services for New Student" 很长）加 "Find a Page" 搜索框
+     在 1180px 的版心里【放不下一行】：实测标签约 930px、搜索约 300px，
+     合计超出约 110px。而版心宽度是写死的，所以这不是"窄窗口才会碰到"的边角情况，
+     在任何屏幕上都会挤掉最后一个标签。
+
+     flex-wrap: wrap 让浏览器自己决定：放得下就一行，放不下就把搜索框落到第二行。
+     标签因此能拿到整行宽度、六个全部可见。代价是吸顶栏高约 88px
+     （所以上面把身份条改成了不吸顶来补偿）。 */
+  flex-wrap: wrap;
+  gap: 6px var(--reaims-sp-4);
+  background-color: var(--reaims-surface) !important;
+  border-bottom: 1px solid var(--reaims-line);
+  /* 让吸顶栏里的内容跟正文对齐到同一个 1180px 版心 */
+  padding-left: max(var(--reaims-pad-x), calc((100% - var(--reaims-maxw)) / 2));
+  padding-right: max(var(--reaims-pad-x), calc((100% - var(--reaims-maxw)) / 2));
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* flex 项里 br 是没有意义的零尺寸项，直接去掉 */
+.cityu_noprint > br {
+  display: none !important;
+}
+
+/* 搜索表单所在的表格推到右侧。
+   white-space: nowrap 很关键：这一格里是 "Find a Page" + 输入框 + Go 按钮，
+   允许换行的话 Go 会掉到第二行、把吸顶栏撑高一倍。 */
+.cityu_noprint > table:has(input[name="in_text"]) {
+  order: 2;
+  flex: 0 0 auto;
+  margin-left: auto !important;
+  width: auto !important;
+  white-space: nowrap;
+}
+
+/* 隐藏重复的 "AIMS (Version 8.33)" 文本 —— 品牌带上已经有 AIMS 字标了。
+   用 :has(input[name="in_text"]) 精确锁定"含搜索框的那张表"，
+   避免误伤其它页面上结构不同的表格。 */
+.cityu_noprint > table:has(input[name="in_text"]) > tbody > tr > td:first-child {
+  display: none !important;
+}
+
+/* 登录页那种没有标签条、只有一行居中版本号的 .cityu_noprint */
+.cityu_noprint > center {
+  display: none !important;
+}
+
+.pageheaderlinks2 {
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block !important;
+  /* Banner 写的是 #CED5EA —— 一种淡薰衣草色，在【浅色】底上几乎看不见。
+     这是个两侧都会出问题的值，必须覆盖。 */
+  color: var(--reaims-ink-muted) !important;
+  text-align: left !important;
+  font-size: var(--reaims-fs-sm) !important;
+  /* 窗口不够宽时让标签条自己横向滚动，而不是把搜索框挤走、或者撑破吸顶栏。
+     滚动条隐藏 —— 这里要的是"能滑"，不是让人看见一条滚动条。 */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pageheaderlinks2::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- 标签条本体 ---------------------------------------------------------
+   只命中【内层】标签表。外层布局表虽然也含 .tabon，但它的子代链是
+   tbody > tr > td.pldefault，所以必须用子代组合器才能排除掉它。
+   （Chrome 对 <table><tr> 必然补出 <tbody>，这是规范保证的。）
+   --- */
+
+.pageheaderlinks2 table.plaintable:has(> tbody > tr > td.tabon, > tbody > tr > td.taboff) {
+  /* 圆角必须配 border-collapse: separate 才生效 */
+  border-collapse: separate !important;
+  border-spacing: 4px 0 !important;
+  border: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+/* 这两格只装 8x20 的圆角 GIF，外加一条 3px 的透明占位行，纯装饰 */
+.pageheaderlinks2 td.bgtabon,
+.pageheaderlinks2 td.bgtaboff {
+  display: none !important;
+}
+
+.pageheaderlinks2 td.tabon,
+.pageheaderlinks2 td.taboff,
+.pageheaderlinks2 td.tabdisable {
+  /* 干掉 background-image: url(/cityu2/gifs/web_tab_corner.gif) */
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: var(--reaims-r);
+  padding: 0 !important;
+  height: auto !important;
+  white-space: nowrap !important;
+  transition: background-color var(--reaims-dur) var(--reaims-ease);
+}
+
+/* 未选中的标签必须也有一层底色。
+   否则整条导航看起来就是"一个品红胶囊 + 五段普通文字"，
+   读不出它是一个控件、也看不出这五个是可替换的平级选项。 */
+.pageheaderlinks2 td.taboff {
+  background-color: var(--reaims-surface-3) !important;
+}
+
+.pageheaderlinks2 td.tabon {
+  background-color: var(--reaims-brand) !important;
+}
+
+.pageheaderlinks2 td.taboff:hover {
+  background-color: var(--reaims-brand-soft) !important;
+}
+
+/* Banner 原本是 #F2F2F2 文字压在 #cccccc 底上，对比度约 1.35:1 —— 本来就不可读 */
+.pageheaderlinks2 td.tabdisable {
+  background-color: var(--reaims-field-disabled) !important;
+}
+
+/* 标签锚点【没有 class】（<a href>个人资料</a>），Banner 是靠
+   .tabon A:link 这类后代选择器上色的。02-base.css 里的全局 a:link
+   会命中它们，所以这里必须用祖先选择器 + 覆盖【全部四个伪类】把颜色夺回来。
+   只写 :link 是不够的 —— Banner 的 A:hover 是一条独立声明。 */
+.pageheaderlinks2 .tabon a,
+.pageheaderlinks2 .tabon a:link,
+.pageheaderlinks2 .tabon a:visited,
+.pageheaderlinks2 .tabon a:hover,
+.pageheaderlinks2 .tabon a:focus,
+.pageheaderlinks2 .tabon a:active {
+  color: var(--reaims-on-brand) !important;
+  text-decoration: none !important;
+}
+
+.pageheaderlinks2 .taboff a,
+.pageheaderlinks2 .taboff a:link,
+.pageheaderlinks2 .taboff a:visited,
+.pageheaderlinks2 .taboff a:active {
+  color: var(--reaims-ink-muted) !important;
+  text-decoration: none !important;
+}
+
+.pageheaderlinks2 .taboff a:hover,
+.pageheaderlinks2 .taboff a:focus {
+  color: var(--reaims-brand) !important;
+  text-decoration: none !important;
+}
+
+.pageheaderlinks2 .tabdisable a,
+.pageheaderlinks2 .tabdisable a:link,
+.pageheaderlinks2 .tabdisable a:visited,
+.pageheaderlinks2 .tabdisable a:hover,
+.pageheaderlinks2 .tabdisable a:focus,
+.pageheaderlinks2 .tabdisable a:active {
+  color: var(--reaims-ink-subtle) !important;
+  text-decoration: none !important;
+}
+
+/* 标签内边距与字号。
+   Banner 原本是 padding: 10px 6px 10px 14px（左右不对称）配 12px 字号。
+   这里收窄到 13px 并显式定字号 —— 六个标签加搜索框要挤进 1180px 的一行，
+   宽度是实打实算过的。 */
+.pageheaderlinks2 .tabon a,
+.pageheaderlinks2 .taboff a,
+.pageheaderlinks2 .tabdisable a {
+  padding: 9px 14px !important;
+  display: block !important;
+  line-height: 1.2 !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+/* --------------------------------------------------------------------------
+   页头（h2 标题 + 原来的黄色 bg3 色带）
+   -------------------------------------------------------------------------- */
+
+.pagetitlediv {
+  padding-top: var(--reaims-sp-5) !important;
+  padding-bottom: 0 !important;
+}
+
+/* Banner: div.pagetitlediv table/tr/td/p { margin: 0.5em } —— 把标题挤离左边缘 */
+div.pagetitlediv td.pldefault,
+div.pagetitlediv p {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+div.pagetitlediv table.plaintable {
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Banner 用 "Times New Roman" + 1.8em + 颜色 #444444 + font-weight: normal */
+div.pagetitlediv h2 {
+  font-family: var(--reaims-font) !important;
+  font-size: var(--reaims-fs-h2) !important;
+  font-weight: 600 !important;
+  color: var(--reaims-ink) !important;
+  letter-spacing: var(--reaims-tracking-tight) !important;
+  line-height: var(--reaims-lh-tight) !important;
+  margin: 0 !important;
+}
+
+/* 原来那条亮黄色 (#cccc00) 色带：格子里只放了一张 3px 高的透明 GIF，
+   靠行盒撑出高度。做法是把 GIF 真正 display:none 掉（而不是 height:0），
+   这样匿名行盒消失，高度就能精确控制在 1px。 */
+div.pagetitlediv img[src$="web_transparent.gif"] {
+  display: none !important;
+}
+
+div.pagetitlediv td.bg3 {
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  background-color: var(--reaims-line) !important;
+  background-image: none !important;
+}
+
+/* 右上角的 staticheaders（例如 "Term: 2026/27 Semester A"）当副标题处理，
+   它是数据页上重要的上下文信息，不能藏。 */
+.staticheaders {
+  color: var(--reaims-ink-muted) !important;
+  font-size: var(--reaims-fs-sm) !important;
+  text-align: right !important;
+}
+
+/* --------------------------------------------------------------------------
+   正文容器
+   -------------------------------------------------------------------------- */
+
+div.body {
+  padding-top: var(--reaims-sp-4) !important;
+  padding-bottom: var(--reaims-sp-6) !important;
+  text-align: left !important;
+}
+
+/* --------------------------------------------------------------------------
+   页脚
+   Banner 在这里硬写了 background-color: #ffffff，深色模式下会是一整块白。
+   -------------------------------------------------------------------------- */
+
+.footer_outer {
+  background-color: transparent !important;
+  padding-bottom: var(--reaims-sp-5) !important;
+}
+
+.footer_inner {
+  border-top: 1px solid var(--reaims-line) !important;
+  padding-top: var(--reaims-sp-4) !important;
+  color: var(--reaims-ink-muted) !important;
+}
+
+/* Banner 有两条把页脚文字写成 #888888 的规则，要分别覆盖 */
+div.footer_inner table.plaintable td.pldefault {
+  color: var(--reaims-ink-muted) !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+div.footer_inner table.plaintable {
+  margin-bottom: var(--reaims-sp-3) !important;
+  background: transparent !important;
+}
+
+/* 应用商店徽章：黑底白字的图，落在深色页面上几乎看不见，
+   深色模式下垫一层白片。尺寸属性 width=100px 是表现属性，这里可以覆盖。 */
+.poweredbydiv {
+  text-align: right !important;
+  margin-bottom: var(--reaims-sp-3) !important;
+}
+
+.poweredbydiv img {
+  width: 100px !important;
+  height: auto !important;
+  padding: 3px 6px;
+  background: var(--reaims-badge-bg);
+  border-radius: var(--reaims-r-sm);
+  vertical-align: middle;
+}
+
+.poweredbydiv img + img {
+  margin-left: var(--reaims-sp-2) !important;
+}
+
+.pagefooterdiv,
+.releasetext {
+  color: var(--reaims-ink-subtle) !important;
+  font-size: var(--reaims-fs-xs) !important;
+  font-weight: 400 !important;
+}
+
+/* Banner 在一堆容器上写了 outline: 0，键盘用户会丢掉焦点指示 */
+.pageheaderlinks2 a:focus-visible,
+.cityubar_tools a:focus-visible {
+  outline: 2px solid var(--reaims-brand) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--reaims-r-sm);
+}

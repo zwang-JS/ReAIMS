@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ReAIMS preview harness — bare legacy popup (/cityu/pics.htm)</title>
+<!--
+  GENERATED FILE -- do not edit by hand.
+  Source of truth: tools/preview/build_preview.py
+  Regenerate with: python tools/preview/build_preview.py
+-->
+<!--
+  The harness script is emitted BEFORE the stylesheet links on purpose: it
+  installs a capture-phase error listener that cannot be registered late.
+  See the comment inside it. Do not move it below the <link> tags.
+-->
+<script>
+/* preview harness chrome -- not part of the extension.
+   Reads ?theme= from the URL and mirrors the extension's real semantics:
+   "light" / "dark" set html[data-reaims-theme]; anything else (absent or
+   invalid) sets NO attribute at all, because "follow the OS" must be a real,
+   independently testable state rather than a third attribute value. */
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var requested = (new URLSearchParams(window.location.search).get("theme") || "").toLowerCase();
+  var forced = (requested === "light" || requested === "dark") ? requested : null;
+
+  if (forced) {
+    root.dataset.reaimsTheme = forced;
+  }
+  /* Read by screenshot tooling. "auto" == no data-reaims-theme attribute. */
+  root.dataset.themeState = forced || "auto";
+
+  function paint() {
+    var out = document.getElementById("harness-theme-readout");
+    if (!out) { return; }
+    var resolved = forced;
+    if (!resolved) {
+      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark (from OS)"
+        : "light (from OS)";
+    }
+    out.textContent =
+      "?theme=" + (requested || "(none)") +
+      "  data-reaims-theme=" + (forced || "(absent)") +
+      "  resolved: " + resolved;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", paint);
+  } else {
+    paint();
+  }
+
+  var scheme = window.matchMedia("(prefers-color-scheme: dark)");
+  if (scheme.addEventListener) { scheme.addEventListener("change", paint); }
+
+  /* ---------------------------------------------------------------------
+     Fail loud when Banner's stylesheet did not load.
+
+     vendor/ is gitignored, fetched by tools/preview/fetch_vendor.py. If it is
+     missing this page still renders and still looks plausible -- while testing
+     nothing, because the inverted cascade is not being reproduced. A silent,
+     plausible-looking preview is the worst outcome here, so raise a banner.
+
+     HOW WE DETECT IT, and why this script sits BEFORE the <link> tags.
+
+     CSSOM is useless for this over file://. Measured in this repo: a <link>
+     pointing at a file that does not exist still gets a non-null .sheet, still
+     appears in document.styleSheets, and reading .cssRules throws
+     SecurityError for missing and present sheets alike (a file:// page has an
+     opaque origin). So the obvious "scan document.styleSheets for the href"
+     check cannot tell them apart -- it reports the sheet is there either way.
+
+     Events are the only signal that discriminates, and they are asymmetric:
+     measured, a failed <link> fires "error" which DOES reach a capture-phase
+     listener on window, while a successful link's "load" does NOT. So we key
+     on the failure signal: no error means it loaded.
+
+     That listener has to be registered before the <link> tags are parsed or
+     the error can be missed, which is why this whole script is emitted ahead
+     of the stylesheet links rather than after them. Do not move it down.
+     --------------------------------------------------------------------- */
+  var VENDOR_CSS = "web_defaultapp.css";
+  var vendorLoadFailed = false;
+
+  window.addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t.tagName === "LINK" && (t.href || "").slice(-VENDOR_CSS.length) === VENDOR_CSS) {
+      vendorLoadFailed = true;
+    }
+  }, true);
+
+  function checkVendor() {
+    /* Two ways to be broken: the stylesheet failed to load, or the <link> is
+       not in the document at all (someone deleted it). */
+    var linkPresent = !!document.querySelector('link[href$="' + VENDOR_CSS + '"]');
+    var missing = vendorLoadFailed || !linkPresent;
+    root.dataset.vendorState = missing ? "missing" : "ok";
+    if (!missing) { return; }
+
+    var el = document.getElementById("harness-vendor-warning");
+    if (!el) { return; }
+    el.textContent =
+      "CASCADE CHECK INACTIVE — vendor/css/web_defaultapp.css did not load. " +
+      "This preview is NOT validating that our rules beat Banner's. " +
+      "Run: python tools/preview/fetch_vendor.py";
+    el.hidden = false;
+  }
+
+  function scheduleVendorCheck() {
+    window.setTimeout(checkVendor, 400);
+  }
+  if (document.readyState === "complete") { scheduleVendorCheck(); }
+  else { window.addEventListener("load", scheduleVendorCheck); }
+})();
+</script>
+<!--
+  ============================================================================
+  THE CASCADE ORDER BELOW IS DELIBERATELY INVERTED -- DO NOT "FIX" IT.
+  ============================================================================
+
+  The extension's 8 stylesheets are linked FIRST. Banner's own page stylesheet
+  (vendor/css/web_defaultapp.css) is linked LAST.
+
+  This looks backwards, but it is the entire point of the harness. On the live
+  site our CSS is injected via content_scripts[].css, and Chrome applies
+  injected content-script CSS BEFORE the page's own <link> elements. Banner's
+  stylesheet therefore wins every equal-specificity source-order tie -- which
+  is exactly why every rule in src/styles/ carries !important.
+
+  Link Banner's stylesheet first and our rules will appear to win when on the
+  real site they do not. The harness would keep rendering, keep looking fine,
+  and quietly stop testing anything. That is the failure mode to avoid.
+-->
+<!-- The extension's 8 stylesheets, in their exact cascade order. -->
+<link rel="stylesheet" href="../../src/styles/01-tokens.css" />
+<link rel="stylesheet" href="../../src/styles/02-base.css" />
+<link rel="stylesheet" href="../../src/styles/03-chrome.css" />
+<link rel="stylesheet" href="../../src/styles/04-tables.css" />
+<link rel="stylesheet" href="../../src/styles/05-forms.css" />
+<link rel="stylesheet" href="../../src/styles/06-messages.css" />
+<link rel="stylesheet" href="../../src/styles/07-widgets.css" />
+<link rel="stylesheet" href="../../src/styles/custom.css" />
+
+<!-- Banner's real page stylesheet. It MUST stay last: it stands in for the page's own CSS, which
+     lands after our injected content-script CSS in the real browser. See the warning above. -->
+<link rel="stylesheet" href="vendor/css/web_defaultapp.css" />
+<!--
+  preview harness chrome -- not part of the extension.
+
+  PREREQUISITE: run `python tools/preview/fetch_vendor.py` before opening this
+  page. tools/preview/vendor/ holds third-party material (AIMS's real
+  stylesheet, CityU/Apple/Google brand images) that this public repo does not
+  redistribute, so it is gitignored and fetched on demand.
+
+  Without it this page still opens and still looks plausible -- but the cascade
+  check is dead, which is the one thing the harness exists to do. So rather
+  than degrading quietly, the script below probes whether Banner's stylesheet
+  actually loaded and raises a red banner across the top of the page if it did
+  not. tools/preview/build_preview.py prints the same warning to stderr at
+  build time.
+-->
+<style>
+:root {
+  --harness-bg: #F6F5F7;
+  --harness-ink: #17161A;
+  --harness-muted: #6C6A75;
+  --harness-hairline: #D9D6DF;
+  --harness-accent: #A50B5E;
+}
+html[data-reaims-theme="dark"] {
+  --harness-bg: #131216;
+  --harness-ink: #EDEBF1;
+  --harness-muted: #9A97A6;
+  --harness-hairline: #2C2A34;
+  --harness-accent: #C0337A;
+}
+/* "follow OS" is the state with no data-reaims-theme attribute at all, so the
+   dark chrome must key off the media query unless light was explicitly forced. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-reaims-theme="light"]) {
+    --harness-bg: #131216;
+    --harness-ink: #EDEBF1;
+    --harness-muted: #9A97A6;
+    --harness-hairline: #2C2A34;
+    --harness-accent: #C0337A;
+  }
+}
+
+#harness-theme-readout {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147483000;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(23, 22, 26, 0.88);
+  color: #FFFFFF;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+html[data-reaims-theme="dark"] #harness-theme-readout {
+  background: rgba(237, 235, 241, 0.92);
+  color: #17161A;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-reaims-theme="light"]) #harness-theme-readout {
+    background: rgba(237, 235, 241, 0.92);
+    color: #17161A;
+  }
+}
+
+.harness-vendor-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483001;
+  margin: 0;
+  padding: 10px 20px;
+  background: #B3261E;
+  color: #FFFFFF;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.harness-vendor-warning[hidden] {
+  display: none;
+}
+</style>
+</head>
+<!--
+  Faithful reproduction of CityU's stylesheet-less legacy popup /cityu/pics.htm:
+  presentational attributes on <body> instead of any CSS.
+
+  This page exists separately from preview.html for one reason. The extension
+  carries a rule keyed on `body:not(:has(.cityubar_outer))` that gives
+  stylesheet-less legacy popups their own reading measure. In preview.html that
+  rule can never fire, because fixture 1 legitimately contains the CityU bar.
+  Here it can, because the page has no CityU bar wrapper at all.
+
+  The class name above appears ONLY inside this comment -- a grep for
+  cityubar_outer in this file returns comment text, not markup. No element on
+  this page carries that class. Verify with:
+
+      chrome --headless=new --dump-dom preview-bare.html | grep cityubar_outer
+
+  which should print nothing at all.
+
+  The <body> keeps its real bgcolor/text/link attributes and deliberately does
+  NOT carry the harness's body class, so the page's own presentation is not
+  overridden by harness chrome.
+-->
+<body text="#006666" bgcolor="#FFFAE8" link="#006666" vlink="#006666" alink="#006666">
+<div id="harness-vendor-warning" class="harness-vendor-warning" role="alert" hidden></div>
+<font face="Arial, Helvetica">
+<center>
+<p>City University of Hong Kong
+<p>Personal Information Collection Statements (PICS)
+</center>
+
+<p>The personal data provided by you will be used by the University for the
+purposes directly related to the admission, registration, teaching and
+administration of your studies, and for the provision of student services.</p>
+
+<p>Your personal data may be transferred to and accessed by other offices and
+departments of the University, and to external bodies where such transfer is
+required or permitted by law. The University will not disclose your personal
+data to any third party for direct marketing purposes without your consent.</p>
+
+<p>You have the right to request access to and correction of your personal data
+held by the University. Requests should be made in writing to the IT Service
+Desk. A fee may be charged for the processing of a data access request.</p>
+
+<p>
+<a href="#purpose">Purpose of Collection</a> |
+<a href="#use">Use of Personal Data</a> |
+<a href="#access">Access and Correction</a>
+</p>
+
+<p>Enquiries: IT Service Desk, +852 3442-8340<br>
+Email: <a href="mailto:it.servicedesk@cityu.edu.hk">it.servicedesk@cityu.edu.hk</a></p>
+</font>
+
+<div id="harness-theme-readout" aria-hidden="true"></div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+/* ==========================================================================
+   ReAIMS — 07-widgets.css
+   遗留资源清理、Banner 的裸色工具类、以及悬浮按钮的宿主定位。
+
+   悬浮按钮的【外观】不在这里
+   -------------------------
+   按钮挂在 Shadow DOM 里，它内部的样式由 src/content/ui.js 注入 shadow root。
+   原因：如果直接放进页面 DOM，Banner 的 `TABLE TD { color: black }`、
+   `.tabon a { color: #fff }` 等几十条规则会继承进来，按钮会随页面结构变形。
+   Shadow DOM 正好挡住这一层。
+   本文件只负责宿主元素在页面里的定位（fixed 到右下角）。
+
+   注意：可继承属性（font-family、color、line-height、letter-spacing…）
+   会穿过 shadow 边界继承进去，所以 ui.js 里的 :host 规则必须显式重置它们。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   悬浮切换按钮的宿主
+   用自定义 id，Banner 的样式表里没有任何规则能命中它，所以这里不需要 !important。
+   z-index 取一个极大值，确保压过 AIMS 自己的浮层。
+   -------------------------------------------------------------------------- */
+
+#reaims-theme-toggle {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000;
+  width: 44px;
+  height: 44px;
+  line-height: normal;
+  /* 宿主本身不画任何东西，全部交给 shadow 内部 */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* 打印时不该出现 */
+@media print {
+  #reaims-theme-toggle {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   遗留位图资源
+   下面这些是 2002 年前后的装饰图，颜色写死在像素里，无法跟随主题：
+     /wtlgifs/web_transparent.gif         1x1 透明占位（靠 width/height 撑出间距）
+     /wtlgifs/web_tab_corner_right.gif    8x20 标签圆角
+     /cityu2/gifs/web_tab_corner.gif      8x20 标签圆角（作为 background-image）
+     /gengifs/hwggbbal.gif                10x10 蓝色小球项目符号
+   透明占位图和圆角图属于纯装饰，直接隐藏；
+   标签圆角已在 03-chrome.css 里用 background-image: none 清掉；
+   蓝球已在 04-tables.css 里换成 CSS 圆点。
+   -------------------------------------------------------------------------- */
+
+/* 标签条两侧的圆角位图（td.bgtabon / td.bgtaboff 里那些 8x20 的图）
+   这两个格子本身已被 03-chrome.css 隐藏，这里作为兜底再挡一层。 */
+img[src$="web_tab_corner_right.gif"] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   Banner 的裸色工具类
+   样式表里存在 .red .blue .green .yellow .orange .magenta 六个颜色工具类，
+   用于给字段和提示上色。原色（尤其深蓝 #0000ff、深绿）在深色底上对比度不足，
+   统一重映射到 01-tokens.css 里的语义色。
+   -------------------------------------------------------------------------- */
+
+.red { color: var(--reaims-c-red) !important; }
+.blue { color: var(--reaims-c-blue) !important; }
+.green { color: var(--reaims-c-green) !important; }
+.yellow { color: var(--reaims-c-yellow) !important; }
+.orange { color: var(--reaims-c-orange) !important; }
+.magenta { color: var(--reaims-c-magenta) !important; }
+
+/* --------------------------------------------------------------------------
+   颜色样本表
+   Banner: table.colorsampletable { background-color: #FFFFFF } —— 深色模式下一块白板。
+   -------------------------------------------------------------------------- */
+
+table.colorsampletable {
+  background-color: var(--reaims-surface) !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: var(--reaims-r) !important;
+  border: 1px solid var(--reaims-line) !important;
+}
+
+table.colorsampletable td {
+  padding: var(--reaims-sp-3) !important;
+  color: var(--reaims-ink) !important;
+}
+
+/* --------------------------------------------------------------------------
+   页面兜底
+   AIMS 的 body 末尾有一串纯用于老式布局的占位 div
+   （.div1 ~ .div6、.banner_copyright、.footerbeforediv 等），它们没有内容，
+   但某些页面会靠它们撑高。这里只保证它们不引入额外高度或背景。
+   -------------------------------------------------------------------------- */
+
+.div1, .div2, .div3, .div4, .div5, .div6,
+.banner_copyright, .footerbeforediv, .footerafterdiv,
+.globalafterdiv, .globalfooterdiv {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* 图片在深色底上如果需要浅色垫片，统一走 .poweredbydiv 的处理（见 03-chrome.css）。
+   其余图标（例如 web_info_cascade.png）本身就是彩色小图，保持原样。 */

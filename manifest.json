@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "ReAIMS — AIMS 界面重构",
+  "version": "1.0.0",
+  "description": "为 CityU AIMS（Banner 8.33）提供现代界面与深浅色主题。",
+  "author": "zwang-JS",
+  "homepage_url": "https://github.com/zwang-JS/ReAIMS",
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_title": "ReAIMS",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "24": "icons/icon24.png",
+      "32": "icons/icon32.png"
+    }
+  },
+
+  "permissions": ["storage"],
+
+  "content_scripts": [
+    {
+      "matches": ["https://banweb.cityu.edu.hk/*"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "css": [
+        "src/styles/01-tokens.css",
+        "src/styles/02-base.css",
+        "src/styles/03-chrome.css",
+        "src/styles/04-tables.css",
+        "src/styles/05-forms.css",
+        "src/styles/06-messages.css",
+        "src/styles/07-widgets.css",
+        "src/styles/custom.css"
+      ],
+      "js": ["src/content/theme-boot.js"]
+    },
+    {
+      "matches": ["https://banweb.cityu.edu.hk/*"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_idle",
+      "world": "ISOLATED",
+      "js": ["src/content/ui.js"]
+    }
+  ]
+}

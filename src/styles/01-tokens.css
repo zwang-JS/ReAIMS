@@ -1,0 +1,209 @@
+/* ==========================================================================
+   ReAIMS — 01-tokens.css
+   设计令牌。这是整个扩展里【唯一】允许出现字面颜色值的文件。
+
+   主题机制
+   --------
+   用 `light-dark()` 让浏览器按 `color-scheme` 自己解析明暗两套值：
+
+     :root                        -> color-scheme: light dark  (跟随系统)
+     html[data-reaims-theme=light] -> color-scheme: light
+     html[data-reaims-theme=dark]  -> color-scheme: dark
+
+   因此"跟随系统"这条路径【不写任何属性】，结构上不可能出现闪烁；
+   只有用户显式选了浅色/深色时，theme-boot.js 才会写 data-reaims-theme。
+
+   这样做还顺带解决了两个问题：
+     1. 原生控件（滚动条、<select> 弹层、日期选择器、复选框）自动跟随主题。
+     2. 打印时 `prefers-color-scheme` 仍然会判定为深色，直接打印会打出黑底。
+        因为一切颜色都挂在 `color-scheme` 上，打印修复只需一行（见文件末尾）。
+
+   约定
+   ----
+   - 自定义属性【一律不加 !important】。优先级由选择器决定即可：
+     html[data-...] (0,1,1) 永远高于 :root (0,1,0)，所以主题覆盖与文件顺序无关。
+   - Banner 自己的样式表里 `!important` 数量为 0，所以本扩展的覆盖是无条件的。
+   ========================================================================== */
+
+:root {
+  /* 让 UA 按系统偏好解析 light-dark()，并让原生控件也跟着变深 */
+  color-scheme: light dark;
+
+  /* ---------- 品牌色 ----------------------------------------------------
+     沿用 AIMS 自身的品红 #A50B5E（它原本就用在选中标签上），保留校本识别度。 */
+  --reaims-brand: light-dark(#a50b5e, #c0337a);
+  --reaims-brand-hover: light-dark(#8a094e, #d6458c);
+  --reaims-brand-soft: color-mix(in oklab, var(--reaims-brand) 10%, var(--reaims-surface));
+  --reaims-brand-line: color-mix(in oklab, var(--reaims-brand) 28%, var(--reaims-surface));
+  --reaims-on-brand: #ffffff;
+  /* 页头品牌带的底色。深色模式下用一块深品红而不是亮品红，
+     否则一整条高饱和色带压在深色页面顶部会非常刺眼。 */
+  --reaims-brand-band: light-dark(#a50b5e, #3d0a26);
+  /* 压在品牌带原图上的罩层，用来在深色模式下压暗那张粉色低多边形栅格图。
+     用"颜色令牌"而不是 opacity，是因为 light-dark() 只支持颜色 --
+     这样就不必为了一个数值再复制一遍 @media 查询。 */
+  --reaims-band-scrim: light-dark(transparent, rgb(0 0 0 / 0.45));
+  /* 页脚应用商店徽章底色。徽章本身是黑底白字，落在深色页面上几乎看不见，
+     深色模式下垫一层白片才成立。 */
+  --reaims-badge-bg: light-dark(transparent, #ffffff);
+
+  /* 链接前景色与品牌填充分成两个令牌。
+     一个品红同时当按钮底色和深色模式正文链接，必然有一边对比度不达标：
+     深色底上链接需要提亮，而按钮填充要保持够实、保证白字可读。 */
+  --reaims-link: light-dark(#a50b5e, #f06ca8);
+  --reaims-link-hover: light-dark(#8a094e, #ff8fc0);
+  --reaims-link-visited: light-dark(#7a2a72, #d99ae0);
+
+  /* ---------- 承载面 ---------------------------------------------------- */
+  --reaims-bg: light-dark(#f6f5f7, #131216);
+  --reaims-surface: light-dark(#ffffff, #1a191f);
+  --reaims-surface-2: light-dark(#fbfafc, #211f27);
+  --reaims-surface-3: light-dark(#f2f1f5, #26242d);
+  --reaims-field: light-dark(#ffffff, #1f1d25);
+  --reaims-field-disabled: light-dark(#eeeef1, #2a2831);
+
+  /* ---------- 文字 ------------------------------------------------------ */
+  --reaims-ink: light-dark(#17161a, #edebf1);
+  --reaims-ink-muted: light-dark(#63616b, #a09eac);
+  --reaims-ink-subtle: light-dark(#8b8994, #7d7b88);
+  --reaims-ink-on-brand: #ffffff;
+
+  /* ---------- 线条 ------------------------------------------------------
+     数据表内部靠"发丝线"建立结构，而不是靠框，所以线色要足够轻。 */
+  --reaims-line: light-dark(#e6e4ea, #2c2a34);
+  --reaims-line-strong: light-dark(#d3d0da, #3a3743);
+  --reaims-line-focus: var(--reaims-brand);
+
+  /* ---------- 语义色 ---------------------------------------------------- */
+  --reaims-danger: light-dark(#b91c1c, #ff9b95);
+  --reaims-danger-bg: color-mix(in oklab, var(--reaims-danger) 10%, var(--reaims-surface));
+  --reaims-danger-line: color-mix(in oklab, var(--reaims-danger) 32%, var(--reaims-surface));
+
+  --reaims-warning: light-dark(#9a5b00, #ffc46b);
+  --reaims-warning-bg: color-mix(in oklab, var(--reaims-warning) 12%, var(--reaims-surface));
+  --reaims-warning-line: color-mix(in oklab, var(--reaims-warning) 34%, var(--reaims-surface));
+
+  --reaims-success: light-dark(#15803d, #6ee7a0);
+  --reaims-success-bg: color-mix(in oklab, var(--reaims-success) 10%, var(--reaims-surface));
+  --reaims-success-line: color-mix(in oklab, var(--reaims-success) 30%, var(--reaims-surface));
+
+  --reaims-info: light-dark(#1d5fa8, #86bdf5);
+  --reaims-info-bg: color-mix(in oklab, var(--reaims-info) 9%, var(--reaims-surface));
+  --reaims-info-line: color-mix(in oklab, var(--reaims-info) 28%, var(--reaims-surface));
+
+  /* Banner 自身有 .red .blue .green .yellow .orange .magenta 六个裸色工具类。
+     直接沿用原色在深色底上对比度不足，这里重映射为语义色。 */
+  --reaims-c-red: var(--reaims-danger);
+  --reaims-c-blue: var(--reaims-info);
+  --reaims-c-green: var(--reaims-success);
+  --reaims-c-yellow: var(--reaims-warning);
+  --reaims-c-orange: light-dark(#b45309, #ffb27a);
+  --reaims-c-magenta: var(--reaims-link);
+
+  /* ---------- 排版 ------------------------------------------------------
+     单一无衬线家族：层级靠字重与字距，而不是靠换字体。
+     顺带干掉 Banner 在 div.pagetitlediv h2 和 h1 上用的 Times New Roman。
+     保留繁体/简体中文回退，AIMS 里会出现中文。 */
+  --reaims-font:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", "PingFang HK", "PingFang SC", "Microsoft JhengHei",
+    "Microsoft YaHei", sans-serif;
+
+  /* 基准 15px / 行高 1.55。Banner 原本是 90%×16 = 14.4px / 1.2em，密而挤。 */
+  --reaims-fs: 15px;
+  --reaims-fs-sm: 13px;
+  --reaims-fs-xs: 12px;
+  --reaims-fs-lg: 17px;
+  --reaims-fs-h4: 15px;
+  --reaims-fs-h3: 17px;
+  --reaims-fs-h2: 24px;
+  --reaims-fs-h1: 30px;
+  --reaims-lh: 1.55;
+  --reaims-lh-tight: 1.25;
+  --reaims-tracking-tight: -0.011em;
+
+  /* ---------- 圆角 ------------------------------------------------------
+     圆角只编码"容器"。给表纸 10px、给控件 8px、给行 0。 */
+  --reaims-r-sm: 6px;
+  --reaims-r: 8px;
+  --reaims-r-lg: 10px;
+  --reaims-r-xl: 14px;
+  --reaims-r-pill: 999px;
+
+  /* ---------- 阴影 ------------------------------------------------------
+     只给表纸和浮层。柔而低，不要扩散。 */
+  --reaims-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+  --reaims-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 14px -6px rgb(0 0 0 / 0.1);
+  --reaims-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.18);
+
+  /* ---------- 间距 ------------------------------------------------------ */
+  --reaims-sp-1: 4px;
+  --reaims-sp-2: 8px;
+  --reaims-sp-3: 12px;
+  --reaims-sp-4: 16px;
+  --reaims-sp-5: 24px;
+  --reaims-sp-6: 32px;
+
+  /* ---------- 动效 ------------------------------------------------------
+     只有响应悬停/聚焦/点击的过渡，没有任何自主动画。 */
+  --reaims-dur: 140ms;
+  --reaims-dur-slow: 220ms;
+  --reaims-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- 布局 ------------------------------------------------------
+     吸顶只给两层（身份条 + 导航），品牌图带滚动即走 ——
+     三层全吸顶会吃掉近 172px 视口。 */
+  --reaims-maxw: 1180px;
+  --reaims-pad-x: 24px;
+  /* 身份条（CityU logo + Help/Exit）不吸顶，它随页面滚走 */
+  --reaims-topbar-h: 40px;
+  /* 吸顶导航的实际高度。标签条与搜索框在 1180px 里放不下一行，
+     所以吸顶栏是两行 —— 见 03-chrome.css 里 .cityu_noprint 的说明。 */
+  --reaims-nav-h: 92px;
+  --reaims-sticky-h: var(--reaims-nav-h);
+
+  --reaims-focus-ring: 0 0 0 2px var(--reaims-surface), 0 0 0 4px var(--reaims-brand);
+}
+
+/* 用户显式选择主题时，覆盖 color-scheme 即可让所有 light-dark() 跟着翻转。
+   选择器特异性 (0,1,1) 高于 :root (0,1,0)，因此与文件顺序无关。 */
+html[data-reaims-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-reaims-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* 打印修复（一行版）。
+   注意 @media print 下 prefers-color-scheme 仍会判定为深色，
+   若不做这一步，深色模式用户打印出来就是整页黑底。 */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+}
+
+/* 尊重减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --reaims-dur: 0ms;
+    --reaims-dur-slow: 0ms;
+  }
+}
+
+/* 高对比度强制配色模式：背景与阴影会被系统清掉，需要给出可用回退，
+   否则我们依赖底色区分层次的地方会全部塌成同一片。 */
+@media (forced-colors: active) {
+  :root {
+    --reaims-line: CanvasText;
+    --reaims-line-strong: CanvasText;
+    --reaims-ink: CanvasText;
+    --reaims-ink-muted: CanvasText;
+    --reaims-surface: Canvas;
+    --reaims-surface-2: Canvas;
+    --reaims-surface-3: Canvas;
+    --reaims-bg: Canvas;
+    --reaims-field: Canvas;
+  }
+}

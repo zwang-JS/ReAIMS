@@ -1,0 +1,271 @@
+/* ==========================================================================
+   ReAIMS — 05-forms.css
+   表单控件：输入框、下拉、文本域、按钮、标签、搜索框。
+
+   本文件拥有的属性：input / select / textarea / button / label 的
+   底色、边框、圆角、内边距、字号、焦点态；.search_textbox / .search_button /
+   .cityu_button_100 / .field*text 系列。
+
+   深色模式下最要命的一处（实测确认）
+   ---------------------------------
+   Banner 的样式表里，这三条规则长这样（下面用文字复述，避免在注释里
+   写出嵌套的注释定界符 —— CSS 注释不能嵌套，内层那对定界符会把本注释提前截断，
+   后面的说明文字就会变成真正生效的 CSS）：
+
+     INPUT     背景色那行【被注释掉了】，但 color: black 生效
+     TEXTAREA  同上
+     SELECT    同上
+
+   也就是说输入框背景是透明的（走 UA 底色）：浅色模式下没问题，可一旦
+   系统是深色模式，Chrome 会因为 color-scheme: dark 把字段底画成深色，
+   而 Banner 强制的黑字正好压在上面 —— 输入的文字完全看不见。
+
+   所以下面必须【同时】显式设置 background-color 和 color，两个都不能省。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   保护性规则：Banner 用它给 select / input 挂"视觉隐藏但可被读屏软件读到"的
+   标签（例如 catalog 页的 <label for=term_input_id><span
+   class="fieldlabeltextinvisible">Term</span></label>）。
+   本文件的任何规则都不得把它露出来，这里显式加固。
+   -------------------------------------------------------------------------- */
+
+.fieldlabeltextinvisible {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   输入框 / 下拉 / 文本域
+   -------------------------------------------------------------------------- */
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  background-color: var(--reaims-field) !important;
+  color: var(--reaims-ink) !important;
+  border: 1px solid var(--reaims-line-strong) !important;
+  border-radius: var(--reaims-r-sm) !important;
+  font-family: var(--reaims-font) !important;
+  font-size: var(--reaims-fs) !important;
+  padding: 7px 10px !important;
+  transition: border-color var(--reaims-dur) var(--reaims-ease),
+              box-shadow var(--reaims-dur) var(--reaims-ease),
+              background-color var(--reaims-dur) var(--reaims-ease);
+}
+
+/* Banner 把 INPUT 的字号写成 90%、SELECT 写成 90% 且 padding: 0，
+   三者字号不一致会让同一行里的控件看起来参差不齐 —— 上面统一成 --reaims-fs。 */
+
+textarea {
+  min-height: 5.5em;
+  resize: vertical;
+  line-height: var(--reaims-lh) !important;
+}
+
+select {
+  /* 让下拉的原生弹出层也跟随深色（真正的开关是 01-tokens.css 里的 color-scheme） */
+  cursor: pointer;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--reaims-brand) !important;
+  background-color: var(--reaims-surface) !important;
+}
+
+/* 焦点环由 02-base.css 的 :focus-visible 统一提供，这里不重复画，
+   也不写 outline: none —— Banner 已经在多处写了 outline: 0，
+   再叠一层等于把键盘用户的最后一点指示也抹掉。 */
+
+input[disabled],
+select[disabled],
+textarea[disabled],
+input[readonly] {
+  background-color: var(--reaims-field-disabled) !important;
+  color: var(--reaims-ink-subtle) !important;
+  cursor: not-allowed;
+}
+
+/* 复选框 / 单选：让原生控件跟着品牌色走 */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--reaims-brand);
+  padding: 0 !important;
+  border: 0 !important;
+  background-color: transparent !important;
+  width: auto;
+}
+
+/* 不要给 input 设 width —— form.form_login 里 Banner 明确写了
+   `input { width: 200px }`（登录页字段宽度），而 size="30" 这类表现属性也在
+   按内容定宽。全局改成 100% 会把这两处都打乱，收益却很小。 */
+
+/* --------------------------------------------------------------------------
+   按钮
+   Banner 的做法是 `background: #444444 url(web_bg_button.png) repeat-x`，
+   也就是把一张不透明的渐变 PNG 压在底色上。这意味着只改 background-color
+   完全没用 —— 必须先把 background-image 清掉，再重画。
+   （.cityu_button_100 和 .search_button 各自还带了另一张渐变图。）
+   -------------------------------------------------------------------------- */
+
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+button {
+  background-image: none !important;
+  background-color: var(--reaims-brand) !important;
+  color: var(--reaims-on-brand) !important;
+  border: 0 !important;
+  border-radius: var(--reaims-r) !important;
+  padding: 9px 18px !important;
+  /* Banner 给 .cityu_button_100 写死了 height: 27px，会把上面的内边距压扁 */
+  height: auto !important;
+  font-family: var(--reaims-font) !important;
+  font-size: var(--reaims-fs) !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background-color var(--reaims-dur) var(--reaims-ease),
+              transform var(--reaims-dur) var(--reaims-ease);
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+button:hover {
+  background-color: var(--reaims-brand-hover) !important;
+}
+
+input[type="submit"]:active,
+input[type="button"]:active,
+input[type="reset"]:active,
+button:active {
+  transform: translateY(1px);
+}
+
+/* 次要按钮（reset）不该跟主操作抢注意力 */
+input[type="reset"] {
+  background-color: transparent !important;
+  color: var(--reaims-ink-muted) !important;
+  border: 1px solid var(--reaims-line-strong) !important;
+}
+
+input[type="reset"]:hover {
+  background-color: var(--reaims-surface-3) !important;
+  color: var(--reaims-ink) !important;
+}
+
+input[disabled][type="submit"],
+input[disabled][type="button"],
+input[disabled][type="reset"],
+button[disabled] {
+  background-color: var(--reaims-field-disabled) !important;
+  color: var(--reaims-ink-subtle) !important;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* .cityu_button_100 本意是"一排等宽按钮"，宽度保留（Banner 写死 100px），
+   只让高度跟随内边距。上面已用 height: auto 处理，无需再覆盖 width。 */
+
+/* --------------------------------------------------------------------------
+   "Find a Page" 搜索区（吸顶导航里）
+   -------------------------------------------------------------------------- */
+
+/* "Find a Page" 的搜索框。
+   注意：真实标记里的这个 input 【没有 class】——
+     <input type="text" name="in_text" size="30" maxlength="65" id="keyword_in_id">
+   Banner 自己那条 input.search_textbox 其实是【匹配不到】的，
+   它实际的宽度来自 size="30" 这个表现属性（约 260px）。
+   所以要收窄就得按 name 选中它（name 是 POST 参数名，比 id 稳定）。
+   宽度必须收窄：吸顶栏要在一行里塞下六个标签加这个搜索框，
+   260px 会把最后一个标签（Services for New Student）整个挤出去。 */
+input.search_textbox,
+input[name="in_text"] {
+  width: 180px !important;
+  border: 1px solid var(--reaims-line-strong) !important;
+  background-color: var(--reaims-field) !important;
+  color: var(--reaims-ink) !important;
+  border-radius: var(--reaims-r-sm) !important;
+  padding: 6px 9px !important;
+  font-family: var(--reaims-font) !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+input.search_textbox:focus {
+  border-color: var(--reaims-brand) !important;
+}
+
+/* Banner 把 Go 按钮压成 28x22 的小方块，上面的通用内边距会把文字挤出去；
+   这里放开尺寸让它按内容排。width/height 是 Banner 声明过的，所以要 !important。 */
+input[type="submit"].search_button,
+input.search_button {
+  width: auto !important;
+  height: auto !important;
+  padding: 6px 11px !important;
+  font-size: var(--reaims-fs-sm) !important;
+  border-radius: var(--reaims-r-sm) !important;
+}
+
+/* 搜索区外面包了一层 <font size="-2">（在 02-base.css 里降到 12px），
+   这里让 "Find a Page" 这个标签跟输入框基线对齐得舒服些 */
+.cityu_noprint form[name="cityu_search"] b {
+  font-weight: 500 !important;
+  color: var(--reaims-ink-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   字段标签
+   -------------------------------------------------------------------------- */
+
+.fieldlabeltext {
+  color: var(--reaims-ink) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs-sm) !important;
+}
+
+.fieldrequiredtext,
+.requiredmsgtext {
+  color: var(--reaims-ink-muted) !important;
+  font-size: var(--reaims-fs-xs) !important;
+  font-weight: 400 !important;
+}
+
+.fieldformattext,
+.fieldformatboldtext,
+.fieldsmalltext,
+.fieldsmallboldtext,
+.fieldmediumtext,
+.fieldmediumtextbold,
+.fieldlargetext {
+  font-size: var(--reaims-fs) !important;
+  color: var(--reaims-ink) !important;
+}
+
+.fieldlargetext {
+  font-size: var(--reaims-fs-lg) !important;
+  font-weight: 600 !important;
+}
+
+/* Banner 用亮橙色 #FFA500 标"需要注意的字段"，在浅色底上对比度不足 */
+.fieldOrangetextbold {
+  color: var(--reaims-warning) !important;
+  font-weight: 600 !important;
+  font-size: var(--reaims-fs) !important;
+}
+
+label {
+  color: var(--reaims-ink) !important;
+}
+
+/* --------------------------------------------------------------------------
+   注意：这里【故意不写】 form { margin: ... }
+   Banner 的 form 默认 margin: 1em 0，而它在标记里给工具栏和隐藏表单写了
+   style="margin:0"（例如 <form name="cityu_search" style="margin:0">、
+   <form name="twbktmlb_cityu_f1" style="margin:0">）。
+   行内样式敌不过 !important，所以一旦我们设置 form 的 margin，就会把那两处
+   有意的归零一起推翻，工具栏立刻错位。
+   -------------------------------------------------------------------------- */

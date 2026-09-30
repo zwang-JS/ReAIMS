@@ -1,0 +1,12 @@
+# 统一换行符。
+# 仓库里一律存 LF；Windows 上检出时仍按 LF 落地（eol=lf），
+# 避免同一个文件在不同机器上产生整文件级的 CRLF 差异噪音。
+* text=auto eol=lf
+
+# 这些是二进制，不要做任何换行符转换
+*.png binary
+*.gif  binary
+*.jpg  binary
+*.ico  binary
+*.zip  binary
+*.crx  binary

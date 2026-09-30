@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ReAIMS — AIMS 界面重构",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "为 CityU AIMS（Banner 8.33）提供现代界面与深浅色主题。",
   "author": "zwang-JS",
   "homepage_url": "https://github.com/zwang-JS/ReAIMS",

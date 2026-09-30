@@ -2,26 +2,22 @@
 
 为香港城市大学 **AIMS**（Ellucian/SunGard Banner 8.33 Self-Service，`banweb.cityu.edu.hk`）做的界面重构 Chrome 扩展。
 
-把 2002 年风格的表格汤重构成一套现代、克制、深浅色可切换的界面。**只改样式，不改结构，不注入内容**，所以不会和 AIMS 自己的会话超时、提交防重等脚本打架。
-
 浅色与深色（同一页，主菜单）：
 
 ![浅色模式](docs/preview-light.png)
 
 ![深色模式](docs/preview-dark.png)
 
-数据表的处理是这套设计的着力点 —— 一张"表纸"、发丝行线、等宽数字对齐、嵌套表独立成块：
-
 ![数据表](docs/preview-tables.png)
 
-## 安装
+## 快速安装
 
 本扩展未上架 Chrome 应用商店，用开发者模式加载。**不需要 Git，也不需要构建。**
 
-1. 到 [Releases](https://github.com/zwang-JS/ReAIMS/releases/latest) 下载最新的 zip（文件名形如 `ReAIMS-vX.Y.Z.zip`）
-2. 打开 `chrome://extensions`
+1. 到 [Releases](https://github.com/zwang-JS/ReAIMS/releases/latest) 下载最新的 zip 压缩包（文件名形如 `ReAIMS-vX.Y.Z.zip`）
+2. chrome浏览器右上角的三个点->扩展程序->管理扩展程序
 3. 右上角打开 **开发者模式**
-4. **把下载的 zip 直接拖进这个页面**，确认安装
+4. **把下载的 zip 压缩包直接拖进这个页面**，确认安装
 5. 打开 AIMS，界面即生效
 
 > **如果拖进去没反应**：把 zip 解压，点左上角 **加载已解压的扩展程序**，选择**解压出来的文件夹**

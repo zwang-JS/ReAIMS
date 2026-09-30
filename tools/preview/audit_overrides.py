@@ -192,6 +192,23 @@ def run_audit(chrome: str, page: str) -> str:
     return text.strip()
 
 
+def read_text_preserving_newlines(path: str) -> tuple[str, str]:
+    """Read as text with LF newlines, remembering the file's original style.
+
+    Returns (text_with_LF, newline_style). Reading in binary avoids Python's
+    universal-newline translation, so the caller can write back byte-exactly.
+    """
+    raw = open(path, "rb").read()
+    style = "\r\n" if b"\r\n" in raw else "\n"
+    return raw.decode("utf-8").replace("\r\n", "\n"), style
+
+
+def write_text_preserving_newlines(path: str, text: str, style: str) -> None:
+    out = text if style == "\n" else text.replace("\n", style)
+    with open(path, "wb") as fh:
+        fh.write(out.encode("utf-8"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--selftest", action="store_true",
@@ -220,14 +237,21 @@ def main() -> int:
         # 挑一条【没有后备规则】的：td.bg3 的底色（AIMS 的 #cccc00）。
         # 别挑 a:link 之类的 —— 02-base 的全局规则会兜住，破坏它不会改变实际取值，
         # 于是审计"正确地"仍然 PASS，看起来像审计失灵。
-        original = open(target, encoding="utf-8").read()
-        needle = "  background-color: var(--reaims-line) !important;\n  background-image: none !important;\n}"
-        if needle not in original:
+        #
+        # 本脚本会改写一个源文件再还原，所以必须原样保住它的换行风格：
+        # 读进来把 CRLF 归一成 LF（锚点在 LF 下书写），写回时再按原风格还原。
+        # 否则在 Windows 上"还原"回来的文件换行符已经变了 ——
+        # 一个声称只读+还原的工具不该有这种副作用。
+        original = read_text_preserving_newlines(target)
+        body, nl = original
+        needle = ("  background-color: var(--reaims-line) !important;\n"
+                  "  background-image: none !important;\n}")
+        if needle not in body:
             print("自检锚点未找到，03-chrome.css 的 td.bg3 规则可能已改动。", file=sys.stderr)
             return 2
-        open(target, "w", encoding="utf-8").write(
-            original.replace(needle, "  /* selftest: override removed */\n"
-                                     "  background-image: none !important;\n}"))
+        broken = body.replace(needle, "  /* selftest: override removed */\n"
+                                      "  background-image: none !important;\n}")
+        write_text_preserving_newlines(target, broken, nl)
         print("自检：已临时移除 td.bg3 的底色覆盖，期望审计报告 FAIL\n")
 
     try:
@@ -236,7 +260,8 @@ def main() -> int:
         print(result)
     finally:
         if original is not None:
-            open(target, "w", encoding="utf-8").write(original)
+            body, nl = original
+            write_text_preserving_newlines(target, body, nl)
             print("\n自检：已还原 03-chrome.css")
 
     # 注意：不能判断 result.startswith("FAIL") —— 结果前几行是统计摘要，

@@ -10,13 +10,16 @@
      html[data-reaims-theme=light] -> color-scheme: light
      html[data-reaims-theme=dark]  -> color-scheme: dark
 
-   因此"跟随系统"这条路径【不写任何属性】，结构上不可能出现闪烁；
-   只有用户显式选了浅色/深色时，theme-boot.js 才会写 data-reaims-theme。
+   默认是【浅色】：首次进入时 theme-boot.js 会写入 data-reaims-theme="light"。
+   只有"跟随系统"这一项【不写任何属性】，完全交给上面的 `light dark` 与
+   prefers-color-scheme —— 那条路径不需要 JS 参与，结构上不可能闪烁。
+   （浅色这条路径靠 theme-boot.js 在 document_start 用同步镜像落属性，同样在首帧之前。）
 
    这样做还顺带解决了两个问题：
      1. 原生控件（滚动条、<select> 弹层、日期选择器、复选框）自动跟随主题。
      2. 打印时 `prefers-color-scheme` 仍然会判定为深色，直接打印会打出黑底。
-        因为一切颜色都挂在 `color-scheme` 上，打印修复只需一行（见文件末尾）。
+        因为一切颜色都挂在 `color-scheme` 上，打印修复很短 —— 但需要两条选择器，
+        不是一条，原因见文件末尾（显式深色的特异性比 :root 高）。
 
    约定
    ----
@@ -175,11 +178,24 @@ html[data-reaims-theme="dark"] {
   color-scheme: dark;
 }
 
-/* 打印修复（一行版）。
+/* 打印修复。
    注意 @media print 下 prefers-color-scheme 仍会判定为深色，
-   若不做这一步，深色模式用户打印出来就是整页黑底。 */
+   若不做这一步，深色模式用户打印出来就是整页黑底。
+
+   为什么必须写【两个】选择器：`html[data-reaims-theme="dark"]`（0,1,1）的特异性
+   比 `:root`（0,1,0）高，只写 `:root` 的话在【显式深色】模式下压不过它 ——
+   打印出来仍然是整页黑底，而这正是这条规则本来要防的事。
+   加上 `:root[data-reaims-theme]`（0,2,0）才盖得住，且不依赖源顺序。
+     · `:root`                    管"没写属性"的情况（用户在跟随系统）
+     · `:root[data-reaims-theme]` 管显式选过浅色/深色的情况
+   两条缺一不可。
+
+   这一点是实测出来的：把两条规则放进屏幕上下文单独比较特异性（媒体查询不贡献
+   特异性，所以在 print 里结果相同），只写 `:root` 时解析成 dark，补上
+   `:root[data-reaims-theme]` 才解析成 light。 */
 @media print {
-  :root {
+  :root,
+  :root[data-reaims-theme] {
     color-scheme: light;
   }
 }

@@ -36,7 +36,7 @@
 ## 功能
 
 - **全站覆盖**：AIMS 的每一个子页面（个人资料、学生记录、选课、学生服务、成绩、课表…）共用同一套样式表，因此也共用同一套新样式，不需要逐页适配。
-- **深浅色主题**：浅色 / 深色 / 跟随系统三选一。默认跟随系统，可跨设备同步。
+- **深浅色主题**：浅色 / 深色 / 跟随系统三选一。**首次进入默认浅色**，选择可跨设备同步。
 - **三个切换入口**：扩展弹窗、页面右下角悬浮按钮、快捷键 `Alt`+`Shift`+`D`。
 - **数据表重构**：圆角表纸 + 柔和阴影 + 发丝行线 + 悬停高亮 + 等宽数字对齐 + 表头吸顶。
 - **打印友好**：深色模式下打印不会打出黑底。
@@ -64,6 +64,7 @@ ReAIMS/
 └── tools/
     ├── gen_icons.py            生成扩展图标（Pillow）
     ├── package_release.py      打发布 zip（发布资产，dist/ 不入库）
+    ├── check_theme_default.js  验证首次进入的默认主题（Node，无依赖）
     └── preview/                静态预览台（见下）
         ├── fetch_vendor.py     抓取第三方资源（vendor/ 不入库）
         ├── build_preview.py    由本地抓取的页面与内置样例合成
@@ -243,6 +244,23 @@ python tools/package_release.py
 另外两条硬要求：`manifest.json` 必须在 zip 的**根目录**（套一层文件夹 Chrome 就会报
 "Manifest file is missing or unreadable"，拖入和解压两条路都一样）；时间戳写死，
 同一份内容重复构建字节一致。
+
+### 验证默认主题
+
+```bash
+node tools/check_theme_default.js
+```
+
+默认主题由两个文件里各一个 `DEFAULT_THEME` 常量决定（`theme-boot.js` 与 `popup.js`）。
+改了一处漏了另一处，就会得到"页面是浅色、弹窗显示深色"的状态，而**没有任何检查会报出来**，
+所以这个脚本第一件事就是断言两处一致；然后用 Node 直接执行 `theme-boot.js` 的逻辑
+（把 `localStorage` / `document` / `chrome.storage` 都桩掉），验证五个场景：全新用户落成
+浅色、镜像丢失后能对账回用户的选择并回写镜像（决定下次会不会闪一帧）、显式深色不被默认值
+带跑、跟随系统仍然不写属性、非法值回落浅色。
+
+之所以用 Node 直接跑逻辑而不是装扩展试：本机的 branded Chrome 会把 `--load-extension`
+**直接忽略**（只打一行 `is not allowed in Google Chrome, ignoring.`），命令行加载不了扩展，
+所以注入路径只能在浏览器里手工验证。
 
 ## 已知限制
 

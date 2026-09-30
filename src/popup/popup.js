@@ -13,11 +13,17 @@
   const TOGGLE_KEY = "showToggle";
   const THEMES = ["light", "dark", "system"];
 
+  /* 首次进入（或用户没选过）时用的主题。
+     定成常量而不是散落的字面量 —— 只改一处就会得到一个"默认值一半是浅色一半是
+     跟随系统"的诡异状态，而且这种不一致没有任何检查会报出来。
+     必须和 theme-boot.js 里的 DEFAULT_THEME 保持一致。 */
+  const DEFAULT_THEME = "light";
+
   const segButtons = Array.from(document.querySelectorAll(".seg button"));
   const showToggleInput = document.getElementById("show-toggle");
   const versionEl = document.getElementById("reaims-version");
 
-  let theme = "system";
+  let theme = DEFAULT_THEME;
 
   /* 版本号从 manifest 里读，不在 HTML 里写死。
      写死的话每次发版后弹窗都会显示上一个版本，而这种不一致没有任何检查会报出来。
@@ -58,10 +64,10 @@
   const hasStorage = Boolean(chrome.storage && chrome.storage.sync);
 
   if (hasStorage) {
-    chrome.storage.sync.get({ [THEME_KEY]: "system", [TOGGLE_KEY]: true }, (data) => {
+    chrome.storage.sync.get({ [THEME_KEY]: DEFAULT_THEME, [TOGGLE_KEY]: true }, (data) => {
       if (chrome.runtime && chrome.runtime.lastError) return;
 
-      theme = THEMES.indexOf(data[THEME_KEY]) !== -1 ? data[THEME_KEY] : "system";
+      theme = THEMES.indexOf(data[THEME_KEY]) !== -1 ? data[THEME_KEY] : DEFAULT_THEME;
       showToggleInput.checked = data[TOGGLE_KEY] !== false;
 
       applyPopupTheme(theme);

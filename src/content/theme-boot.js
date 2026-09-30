@@ -27,6 +27,11 @@
   const MIRROR_KEY = "reaims:theme";
   const THEMES = ["light", "dark", "system"];
 
+  /* 首次进入（或用户没选过）时用的主题。
+     定成常量而不是散落的字面量 —— 这个默认值同时出现在本文件的两处，
+     只改一处就会得到一个"默认值一半是浅色一半是跟随系统"的诡异状态。 */
+  const DEFAULT_THEME = "light";
+
   /* 镜像读写：localStorage 在部分受限/分区上下文里会直接抛异常，
      不能让它把整个脚本带崩 —— 失败时安静地退回"跟随系统"，
      那条路径不需要属性，照样是对的。 */
@@ -74,7 +79,7 @@
   }
 
   /* ---- 1) 同步落一次（读镜像，避免闪烁） ---- */
-  let current = mirror.read() || "system";
+  let current = mirror.read() || DEFAULT_THEME;
   applyWhenReady(current);
 
   /* ---- 2) 异步与事实来源对账 ---- */
@@ -82,10 +87,10 @@
     return;
   }
 
-  chrome.storage.sync.get({ [THEME_KEY]: "system" }, (data) => {
+  chrome.storage.sync.get({ [THEME_KEY]: DEFAULT_THEME }, (data) => {
     if (chrome.runtime && chrome.runtime.lastError) return;
 
-    const stored = THEMES.indexOf(data[THEME_KEY]) !== -1 ? data[THEME_KEY] : "system";
+    const stored = THEMES.indexOf(data[THEME_KEY]) !== -1 ? data[THEME_KEY] : DEFAULT_THEME;
     if (stored === current) return;
 
     current = stored;

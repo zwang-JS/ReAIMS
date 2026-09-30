@@ -5,7 +5,6 @@
      第一层（全局安全层）—— 所有表格都受益，但只碰"排版"类属性，
        绝不碰 display / text-align / width / height。
      第二层（数据表纸层）—— 圆角、柔和阴影、发丝行线、斑马纹、悬停洗色。
-       只作用于 div.body 内部的表格。
 
    为什么用 div.body 划界
    --------------------
@@ -13,9 +12,25 @@
      · 页面外壳 —— 标签条在 span.pageheaderlinks2 里、标题块在
        div.pagetitlediv 里、页脚在 div.footer_outer 里；
      · 正文内容 —— 一律在 div.body 里。
-   所以 `div.body` 就是天然的"内容 / 外壳"分界线，一条选择器就能把外壳排除干净，
-   不需要去枚举三个祖先做 :not() 排除。这也顺带解决了内边距的问题：
-   只有正文里的 pldefault 格子会被加上内边距，标题块和页脚的格子不受影响。
+   所以 `div.body` 就是天然的"内容 / 外壳"分界线，一条选择器就能把外壳排除干净。
+   这也顺带解决了内边距：只有正文里的格子会被加内边距，标题块和页脚不受影响。
+
+   单元格规则按【单元格 class】命中，而不是按【表 class】
+   ---------------------------------------------------
+   这是被审计工具发现并修掉的一个真实漏洞。最初的写法是
+   `div.body table:is(.datadisplaytable, …) :is(td,th):is(.ntlabel, …)`，
+   也就是要求表格的 class 在我们枚举的名单里。
+
+   但 Banner 的数据单元格 class（dd* / db* / de* / nt* / mp*）可以出现在
+   【任意】表里 —— `TABLE TD.ntlabel { background-color: #E3E5EE }` 对任何
+   表里的 td.ntlabel 都生效。只要那张表的 class 不在名单里，Banner 那片浅灰紫
+   底就会原样漏出来，在深色模式下格外刺眼。
+
+   所以现在分两种命中方式：
+     · 单元格级规则（内边距、底色、边框）→ 只按单元格 class 命中，不要求表的身份。
+       这样"没见过的表类"也自动被覆盖 —— 覆盖的完备性不再依赖我枚举得够不够全。
+     · 表纸级规则（圆角、阴影、四角）→ 既按已知表类命中，也用 :has() 兜住
+       "表里有 Banner 数据单元格、但表 class 未知"的情况。
 
    两条不要违反的约束（理由见 02-base.css 顶部）
    -------------------------------------------
@@ -35,16 +50,24 @@ th, td {
   line-height: var(--reaims-lh) !important;
 }
 
-/* Banner 的 td/th 默认 vertical-align: top（1811 行），数据表里反而显得松散。
-   但这属于"表现属性对齐"范畴，动了会改变星号列宽布局，所以这里不动。 */
+/* Banner 的 td/th 默认 vertical-align: top（1811 行）。那是表现属性对齐范畴，
+   动了会改变星号列宽布局，所以这里不动。 */
 
-/* --------------------------------------------------------------------------
+/* ==========================================================================
    第二层：数据表纸层
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
 
-/* --- 表纸容器 ---------------------------------------------------------- */
-
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) {
+/* --- 表纸容器 ----------------------------------------------------------
+   两种命中方式，理由见文件头。用子代组合器（> tbody > tr >）而不是后代组合器，
+   避免把"内含数据表的外层布局表"也一并命中。 */
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable),
+div.body table:has(> tbody > tr > :is(
+  .dddefault, .ddheader, .ddtitle, .ddlabel, .ddseparator, .ddhighlight, .dddead, .ddwhite, .ddnontabular,
+  .dbdefault, .dbheader, .dbtitle, .dblabel,
+  .dedefault, .deheader, .detitle, .delabel, .deseparator, .dehighlight, .dedead, .dewhite, .deborder,
+  .ntdefault, .ntheader, .nttitle, .ntlabel, .ntseparator, .nthighlight, .ntdead, .ntwhite,
+  .mpdefault, .mpheader, .mptitle, .mplabel, .mpwhite, .cityuddlabel
+)) {
   /* 圆角必须配 border-collapse: separate 才生效。
      Banner 给 .bordertable 写死了 collapse，一条 separate 顺带修正它。 */
   border-collapse: separate !important;
@@ -60,7 +83,8 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
 /* 嵌套的表纸：课程搜索结果里，每个课程行本身是一个 datadisplaytable，
    其 td.dddefault 里又嵌了一张上课时间的 datadisplaytable。
    不做去嵌套的话会出现"卡片里套卡片"、边框和留白双重叠加。 */
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) {
+div.body table:has(> tbody > tr > :is(.dddefault, .ddheader, .ddtitle, .ddlabel, .ntdefault, .ntlabel, .dedefault, .delabel))
+         table:has(> tbody > tr > :is(.dddefault, .ddheader, .ddtitle, .ddlabel, .ntdefault, .ntlabel, .dedefault, .delabel)) {
   box-shadow: none !important;
   border-radius: var(--reaims-r-sm) !important;
   background-color: var(--reaims-surface-2) !important;
@@ -70,18 +94,21 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
   margin: var(--reaims-sp-3) 0 0 !important;
 }
 
-/* --- 单元格：先清边框，再只留一条上发丝线 ------------------------------
-   Banner 给 dddefault 等写了四边 1px #BFBFBF 实线，与外层表框叠加成双线。
-   数据表的结构应该来自"发丝线"，不是"框"。 */
+/* --- 单元格：先清边框与底色 -------------------------------------------
+   Banner 给 dddefault 等写了四边 1px #BFBFBF 实线，与外层表框叠加成双线；
+   还给表头/标题/ntlabel 等写了 #E3E5EE 的浅色底。
+   这里把所有正文单元格统一清成透明 —— 表格的结构应该来自"发丝线"，不是"框"。
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th) {
+   这条"透明化"是覆盖完备性的关键：它让 Banner 那些写死的浅色底在深色模式下
+   【不可能】漏出来，无论那个格子属于哪张表、表 class 是什么。 */
+div.body :is(td, th) {
   border: 0 !important;
   background-color: transparent !important;
 }
 
 /* --- 单元格：内边距按角色给，绝不给裸 td ------------------------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
+div.body :is(td, th):is(
   .dddefault, .ddheader, .ddtitle, .ddlabel, .ddseparator, .ddhighlight, .dddead,
   .ddwhite, .ddnontabular,
   .dbdefault, .dbheader, .dbtitle, .dblabel,
@@ -103,39 +130,30 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
 
 /* Banner 的 .whitespace1-4 是纵向占位符（padding-top: 0/1/2/3em）。
    "重要性"高于"特异性"，所以上面那条带 !important 的内边距会把它压平。
+   下面的选择器与上面【特异性相同】（都是 (0,2,2)）且排在后面，
+   靠"同特异性、后来者胜"拿下。
 
-   这里必须用【带 div.body table:is(...) 前缀】的选择器，而不是简单的
-   `div.body .whitespace2`：后者的特异性是 (0,2,1)，低于上面内边距规则的
-   (0,3,3)，同为 !important 时会输掉 —— 换成前缀后两者都是 (0,3,3)，
-   再靠"同特异性、后来者胜"拿下。这类"以为写了兜底其实没生效"的规则
-   不能靠读代码发现，只能靠算特异性。 */
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
-  .whitespace1, .whitespace2, .whitespace3, .whitespace4
-) {
+   早先的写法是 `div.body .whitespace2`，特异性只有 (0,2,1)，低于上面那条，
+   等于写了没生效。这个 bug 靠读代码发现不了，是算特异性算出来的，
+   之后又用浏览器实测 padding-top 确认修好。 */
+div.body :is(td, th):is(.whitespace1, .whitespace2, .whitespace3, .whitespace4) {
   padding: 0 !important;
   border-top: 0 !important;
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th).whitespace2 {
-  padding-top: 1em !important;
-}
-
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th).whitespace3 {
-  padding-top: 2em !important;
-}
-
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th).whitespace4 {
-  padding-top: 3em !important;
-}
+div.body :is(td, th).whitespace2 { padding-top: 1em !important; }
+div.body :is(td, th).whitespace3 { padding-top: 2em !important; }
+div.body :is(td, th).whitespace4 { padding-top: 3em !important; }
 
 /* 表格第一行不要上发丝线，否则贴着表纸圆角会出现一条多余的线 */
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :is(td, th) {
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :is(td, th),
+div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefault, .dedefault, .delabel)) > tbody:first-of-type > tr:first-child > :is(td, th) {
   border-top: 0 !important;
 }
 
 /* --- 角色：表头 / 标题（带底色） --------------------------------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
+div.body :is(td, th):is(
   .ddheader, .ddtitle, .dbheader, .dbtitle, .deheader, .detitle,
   .ntheader, .nttitle, .ntlabel, .mpheader, .mptitle, .cityuddlabel
 ) {
@@ -148,36 +166,31 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
 }
 
 /* .cityuddlabel 原本是 #1E2B83 深蓝压在 #E3E5EE 上，深色模式下深蓝 ≈ 不可见 */
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th).cityuddlabel {
+div.body :is(td, th).cityuddlabel {
   color: var(--reaims-ink) !important;
 }
 
 /* --- 角色：行标签（加粗、无底色） -------------------------------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
-  .ddlabel, .dblabel, .delabel, .mplabel, .pllabel
-) {
+div.body :is(td, th):is(.ddlabel, .dblabel, .delabel, .mplabel, .pllabel) {
   font-weight: 600 !important;
   color: var(--reaims-ink) !important;
 }
 
 /* --- 角色：斑马纹 / 分隔 / 高亮 / 失效 --------------------------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
-  .ddwhite, .dewhite, .ntwhite, .mpwhite, .plwhite, .ddseparator, .deseparator, .ntseparator, .plseparator, .ddnontabular
+div.body :is(td, th):is(
+  .ddwhite, .dewhite, .ntwhite, .mpwhite, .plwhite,
+  .ddseparator, .deseparator, .ntseparator, .plseparator, .ddnontabular
 ) {
   background-color: var(--reaims-surface-2) !important;
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
-  .ddhighlight, .dehighlight, .nthighlight, .mphighlight, .plhighlight
-) {
+div.body :is(td, th):is(.ddhighlight, .dehighlight, .nthighlight, .mphighlight, .plhighlight) {
   background-color: var(--reaims-brand-soft) !important;
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) :is(td, th):is(
-  .dddead, .dedead, .ntdead, .pldead
-) {
+div.body :is(td, th):is(.dddead, .dedead, .ntdead, .pldead) {
   /* 只降调，不画删除线。
      "dead" 表示该行已失效（例如已退选的课），但课程名、学分、成绩这些内容
      学生仍然需要读。删除线会横穿每一个数字和单词，是纯粹的易读性损失；
@@ -187,14 +200,14 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
 
 /* --- 悬停洗色 ----------------------------------------------------------
    必须排除表头/标题行，否则鼠标扫过会把整条表头重刷一遍。
-   第二条规则的选择器更长（多一个类），特异性更高，稳定压过第一条。 */
+   第二条规则多一个类，特异性更高，稳定压过第一条。 */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody > tr:hover > :is(td, th) {
+div.body table > tbody > tr:hover > :is(td, th) {
   background-color: var(--reaims-brand-soft) !important;
   transition: background-color var(--reaims-dur) var(--reaims-ease);
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody > tr:hover > :is(td, th):is(
+div.body table > tbody > tr:hover > :is(td, th):is(
   .ddheader, .ddtitle, .dbheader, .dbtitle, .deheader, .detitle,
   .ntheader, .nttitle, .ntlabel, .mpheader, .mptitle, .cityuddlabel
 ) {
@@ -203,27 +216,31 @@ div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplainta
 
 /* --- 圆角：给四角单元格单独设，而不是用 overflow: hidden -------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :first-child {
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :first-child,
+div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefault, .dedefault, .delabel)) > tbody:first-of-type > tr:first-child > :first-child {
   border-top-left-radius: var(--reaims-r-lg);
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :last-child {
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:first-of-type > tr:first-child > :last-child,
+div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefault, .dedefault, .delabel)) > tbody:first-of-type > tr:first-child > :last-child {
   border-top-right-radius: var(--reaims-r-lg);
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :first-child {
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :first-child,
+div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefault, .dedefault, .delabel)) > tbody:last-of-type > tr:last-child > :first-child {
   border-bottom-left-radius: var(--reaims-r-lg);
 }
 
-div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :last-child {
+div.body table:is(.datadisplaytable, .dataentrytable, .bordertable, .menuplaintable, .plaintable) > tbody:last-of-type > tr:last-child > :last-child,
+div.body table:has(> tbody > tr > :is(.ddheader, .dddefault, .ntlabel, .ntdefault, .dedefault, .delabel)) > tbody:last-of-type > tr:last-child > :last-child {
   border-bottom-right-radius: var(--reaims-r-lg);
 }
 
 /* --- 表头吸顶 ----------------------------------------------------------
    Banner 不产生 <thead>，表头是普通 <tr> 里的 .ddheader 格子。
-   在 td 上用 position: sticky 是可行的，吸在两层吸顶栏下面。 */
+   在 td 上用 position: sticky 是可行的，吸在吸顶导航下面。 */
 
-div.body table:is(.datadisplaytable, .bordertable) :is(td, th):is(.ddheader, .dbheader) {
+div.body :is(td, th):is(.ddheader, .dbheader) {
   position: sticky;
   top: var(--reaims-sticky-h);
   z-index: 2;
@@ -231,7 +248,7 @@ div.body table:is(.datadisplaytable, .bordertable) :is(td, th):is(.ddheader, .db
 
 /* --- 表标题（caption）-------------------------------------------------- */
 
-div.body table:is(.datadisplaytable, .dataentrytable) > caption.captiontext {
+div.body table > caption.captiontext {
   caption-side: top;
   text-align: left !important;
   color: var(--reaims-ink) !important;
@@ -245,6 +262,8 @@ div.body table:is(.datadisplaytable, .dataentrytable) > caption.captiontext {
    主菜单（table.menuplaintable）
    这是用户登录后第一眼看到的东西，也是深色模式下坏得最明显的一处：
    Banner 把整张菜单的链接写成 #1252a0（深蓝），在深色底上完全读不出来。
+   （顺带说明：真正兜住这一条的是 02-base.css 里全局的 a:link —— 它带
+     !important，对任何选择器都赢。这里再写一遍是为了让意图就地可见。）
    -------------------------------------------------------------------------- */
 
 div.body table.menuplaintable a.submenulinktext2,
@@ -311,10 +330,7 @@ div.body table.bordertable > tbody > tr > :is(td, th) {
   border-top: 1px solid var(--reaims-line) !important;
 }
 
-/* --------------------------------------------------------------------------
-   分页 / 多页提示条
-   -------------------------------------------------------------------------- */
-
+/* 分页 / 多页提示条 */
 .multipagemsgtext {
   color: var(--reaims-ink-muted) !important;
   font-size: var(--reaims-fs-sm) !important;

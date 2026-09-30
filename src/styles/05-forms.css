@@ -168,8 +168,20 @@ button[disabled] {
   transform: none;
 }
 
-/* .cityu_button_100 本意是"一排等宽按钮"，宽度保留（Banner 写死 100px），
-   只让高度跟随内边距。上面已用 height: auto 处理，无需再覆盖 width。 */
+/* .cityu_button_100 本意是"一排等宽按钮"，Banner 写死 width: 100px、
+   padding: 5px 0 6px 0（横向为 0，把整整 100px 都留给文字）。
+
+   上面的通用规则会给它加 9px 18px 的横向内边距 —— 那会把内容盒压到
+   100 - 36 = 64px，稍长的按钮文字就会被挤到折行甚至裁切。
+   这类"固定宽度 + 横向留白"的按钮必须尊重原来的横向内边距，
+   只在纵向做现代化调整。 */
+input[type="submit"].cityu_button_100,
+input[type="button"].cityu_button_100,
+input[type="reset"].cityu_button_100,
+input.cityu_button_100 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 
 /* --------------------------------------------------------------------------
    "Find a Page" 搜索区（吸顶导航里）

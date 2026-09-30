@@ -225,13 +225,3 @@ node tools/check_theme_default.js
 之所以用 Node 直接跑逻辑而不是装扩展试：本机的 branded Chrome 会把 `--load-extension`
 **直接忽略**（只打一行 `is not allowed in Google Chrome, ignoring.`），命令行加载不了扩展，
 所以注入路径只能在浏览器里手工验证。
-
-## 已知限制
-
-- **不含登录页**。AIMS 走 SAML SSO 跳转到 Okta（`auth.cityu.edu.hk`），那是已现代化、基于 Shadow DOM、且全校共用的非 AIMS 页面，本扩展刻意不碰。
-- **不能重构 DOM**。只改样式，所以无法把一个表格变成 CSS Grid，也无法移动元素位置。像"把页面标题和搜索框放进同一行"这类调整只能靠 flex 容器与 `order` 实现。
-- **仅覆盖 `banweb.cityu.edu.hk`**。AIMS 跳转到其它域名的页面不在范围内。
-- **用弹窗改主题后，下一次打开 AIMS 可能会有一次极短的闪烁**。因为页面侧的 `localStorage` 镜像只有在页面里跑过脚本才会更新，而 `theme-boot.js` 从镜像同步读取。只要那时有任一 AIMS 页面开着，镜像就会立即更新，不会闪。
-- 表头吸顶（`position: sticky`）用的是 AIMS 的 `td.ddheader` 而非 `<thead>`，因为 Banner 不产生 `<thead>`。极长的多段表格里，多行表头会叠在同一位置。
-- **浅色模式下，标记层面写死的浅色/浅彩底也会被一并清掉**。`02-base.css` 里那条背景中和规则是无条件的（不分主题），目的是让 AIMS 画的所有底都不可能漏出来。浅色模式下 AIMS 那些接近纯白的底本来就看不出来，所以基本没有实际差别；但如果某处用的是有意的**彩色**底（例如米黄提示块），它在浅色模式下也会变成我们自己的承载面。这是一处刻意的行为变化 —— 换来的是"深色模式下不可能再出现白底"。
-- **只有行内 `!important` 压不过**。如果 AIMS 用 `style="background-color:#fff !important"` 写死底色，作者样式表无论怎么写都赢不了（行内 important 高于作者 important）。目前没遇到，真遇到的话只能改用 USER 来源注入（需要加 `scripting` 权限）。

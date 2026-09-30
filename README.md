@@ -1,6 +1,6 @@
 # ReAIMS
 
-为香港城市大学 **AIMS**（Ellucian/SunGard Banner 8.33 Self-Service，`banweb.cityu.edu.hk`）做的界面重构 Chrome 扩展。
+为香港城市大学 **AIMS** 系统做的界面重构 Chrome 扩展。
 
 浅色与深色（同一页，主菜单）：
 

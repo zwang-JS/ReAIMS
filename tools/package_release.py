@@ -24,7 +24,19 @@ Usage
     python tools/package_release.py
     python tools/package_release.py --out dist        # default output dir
 
-Writes `dist/ReAIMS-v<version>.zip` and prints every file it packed.
+Writes `dist/ReAIMS-v<version>-chromium.zip` and prints every file it packed.
+
+为什么产物名里带 `-chromium`
+--------------------------
+因为它同时服务 Chrome 和 Edge —— Edge 是 Chromium 内核，读同一份 manifest.json，
+也没有任何 Edge 专属字段，所以同一个包两边都能装。文件名把这件事说清楚，
+用户不用猜自己该下哪一个；真做了别的内核的包，也能直接并排挂上去。
+
+（如果将来要出 Firefox 版：Firefox 需要的只是 manifest 里多一个
+ `browser_specific_settings.gecko.id` —— 现在的键它都支持，所以甚至可以共用一份
+ manifest。变体该加在 build() 里：按 target 换一份 manifest 的副本、换一个输出名。
+ 真正的工作量不在打包，而在 Mozilla 的强制签名：未签名的包在正式版 Firefox 里
+ 只能临时加载，要永久安装必须经 AMO 签名，那需要一个 Mozilla 账号。）
 """
 
 from __future__ import annotations
@@ -121,7 +133,7 @@ def referenced_paths() -> set[str]:
 def build(out_dir: str) -> tuple[str, list[str]]:
     version = json.load(open(MANIFEST, encoding="utf-8"))["version"]
     os.makedirs(out_dir, exist_ok=True)
-    zip_path = os.path.join(out_dir, "ReAIMS-v%s.zip" % version)
+    zip_path = os.path.join(out_dir, "ReAIMS-v%s-chromium.zip" % version)
 
     files = collect()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:

@@ -197,7 +197,8 @@ AIMS 的字面色；而且纯白被排除在它的危险集合外（我们确实
 python tools/package_release.py
 ```
 
-产出 `dist/ReAIMS-v<版本>.zip`，就是 Release 里那个可以拖进 `chrome://extensions` 的文件。
+产出 `dist/ReAIMS-v<版本>-chromium.zip` —— 就是 Release 里那个包，**Chrome 和 Edge 都用它**
+（Edge 是 Chromium 内核，读同一份 manifest，没有 Edge 专属字段，所以不需要单独出包）。
 
 **为什么文件清单不是从 `manifest.json` 推出来的**：那样会打出一个**坏包**。
 `manifest.json` 里根本没有 `src/popup/popup.css` —— 引用它的是 `popup.html` 里的
